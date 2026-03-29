@@ -595,6 +595,38 @@ body::after {
 }
 .li-empty { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
 
+/* New conversation button */
+.new-convo-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--muted2); cursor: pointer;
+  transition: all 0.15s; white-space: nowrap; margin-left: auto;
+}
+.new-convo-btn:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+.new-convo-btn svg { width: 10px; height: 10px; }
+
+/* Editable domain chips */
+.tc.removable { cursor: pointer; padding-right: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.tc.removable:hover { opacity: 0.7; }
+.tc-remove { font-size: 9px; line-height: 1; opacity: 0.6; }
+.domain-add-row { display: flex; gap: 5px; margin-top: 7px; }
+.domain-input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 4px 8px;
+  color: var(--text); font-family: var(--mono); font-size: 10px;
+  outline: none; transition: border-color 0.15s;
+}
+.domain-input:focus { border-color: rgba(255,170,71,0.4); }
+.domain-add-btn {
+  padding: 4px 10px; border-radius: 4px;
+  background: rgba(255,170,71,0.1); border: 1px solid rgba(255,170,71,0.3);
+  color: var(--orange); font-family: var(--mono); font-size: 9px;
+  cursor: pointer; transition: all 0.15s;
+}
+.domain-add-btn:hover { background: rgba(255,170,71,0.18); }
+
 /* ══════════════ DECISION ENGINE ══════════════ */
 .form-field { margin-bottom: 13px; }
 .form-field label {
@@ -833,6 +865,10 @@ body::after {
       </div>
       <div class="mode-pipe"></div>
       <div class="mode-desc-badge" id="modeDesc">Big picture analysis first — then the details that actually matter.</div>
+      <button class="new-convo-btn" onclick="newConversation()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 2.5v9M2.5 7h9"/></svg>
+        New Chat
+      </button>
     </div>
     <div class="messages" id="messages">
       <div class="mgroup twin">
@@ -979,16 +1015,12 @@ body::after {
             </div>
           </div>
           <div class="trait-group">
-            <div class="tg-name">Domain expertise</div>
-            <div class="tg-chips">
-              <span class="tc tc-o">AI Infrastructure</span>
-              <span class="tc tc-o">OSINT & GeoInt</span>
-              <span class="tc tc-o">Semiconductor Strategy</span>
-              <span class="tc tc-o">Multi-Agent Systems</span>
-              <span class="tc tc-o">Materials Science</span>
-              <span class="tc tc-o">Full-Stack Dev</span>
-              <span class="tc tc-o">Geopolitics</span>
-              <span class="tc tc-o">Civil Engineering Tech</span>
+            <div class="tg-name">Domain expertise <span style="color:var(--muted);font-size:7.5px;">(editable)</span></div>
+            <div class="tg-chips" id="domainChips"></div>
+            <div class="domain-add-row">
+              <input class="domain-input" id="domainInput" placeholder="Add domain..." maxlength="32"
+                onkeydown="if(event.key==='Enter')addDomain()">
+              <button class="domain-add-btn" onclick="addDomain()">+ Add</button>
             </div>
           </div>
         </div>
@@ -1044,6 +1076,48 @@ setInterval(() => {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }, 1000);
 document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+// ── Domain chips ──
+const DOMAIN_KEY = 'dt_domains_v1';
+const DEFAULT_DOMAINS = ['AI Infrastructure','OSINT & GeoInt','Semiconductor Strategy','Multi-Agent Systems','Materials Science','Full-Stack Dev','Geopolitics','Civil Engineering Tech'];
+let domains = JSON.parse(localStorage.getItem(DOMAIN_KEY) || 'null') || [...DEFAULT_DOMAINS];
+
+function renderDomains() {
+  const wrap = document.getElementById('domainChips');
+  wrap.innerHTML = domains.map((d, i) =>
+    `<span class="tc tc-o removable" title="Click to remove">
+      ${d}<span class="tc-remove" onclick="removeDomain(${i})">✕</span>
+    </span>`).join('');
+}
+function addDomain() {
+  const inp = document.getElementById('domainInput');
+  const val = inp.value.trim();
+  if (!val || domains.includes(val)) { inp.value = ''; return; }
+  domains.push(val);
+  localStorage.setItem(DOMAIN_KEY, JSON.stringify(domains));
+  renderDomains(); inp.value = '';
+}
+function removeDomain(i) {
+  domains.splice(i, 1);
+  localStorage.setItem(DOMAIN_KEY, JSON.stringify(domains));
+  renderDomains();
+}
+renderDomains();
+
+// ── New conversation ──
+function newConversation() {
+  if (sessionMessages.length && !confirm('Start a new conversation? Current session is already saved.')) return;
+  saveSession();
+  history = []; sessionMessages = []; learnedThings = []; exchanges = 0;
+  document.getElementById('exchCount').textContent = '0';
+  document.getElementById('exchBadge').textContent = '0';
+  document.getElementById('learnCount').textContent = '0';
+  document.getElementById('learnedBadge').textContent = '0';
+  updateLearnedList();
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  appendMsg('twin', 'New session started. What are we thinking about?', null);
+}
 
 // Input auto-resize
 document.getElementById('userInput').addEventListener('input', function () {
