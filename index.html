@@ -4,301 +4,873 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Digital Twin</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0a0a0a;--surface:#111;--surface2:#181818;--surface3:#202020;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-  --accent:#e8ff47;--accent2:#47c5ff;
-  --text:#f0f0f0;--muted:#555;--muted2:#888;--muted3:#aaa;
-  --danger:#ff6b6b;--success:#47ffb0;
-  --mono:'DM Mono',monospace;--display:'Syne',sans-serif;
-  --sb-width: 255px; /* Added variable for sidebar width */
+:root {
+  --bg: #080808;
+  --bg2: #0d0d0d;
+  --surface: #111213;
+  --surface2: #161819;
+  --surface3: #1c1e20;
+  --border: rgba(255,255,255,0.055);
+  --border2: rgba(255,255,255,0.11);
+  --border3: rgba(255,255,255,0.18);
+  --accent: #d4ff47;
+  --accent-dim: rgba(212,255,71,0.12);
+  --accent-glow: rgba(212,255,71,0.25);
+  --cyan: #47d4ff;
+  --cyan-dim: rgba(71,212,255,0.1);
+  --green: #47ffb0;
+  --green-dim: rgba(71,255,176,0.08);
+  --danger: #ff5555;
+  --danger-dim: rgba(255,85,85,0.1);
+  --orange: #ffaa47;
+  --text: #efefef;
+  --text2: #b0b4b8;
+  --muted: #484c50;
+  --muted2: #6a6e73;
+  --muted3: #9298a0;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Space Grotesk', sans-serif;
+  --sb: 268px;
+  --top: 50px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
-body{background:var(--bg);color:var(--text);font-family:var(--display);}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse at 15% 60%,rgba(232,255,71,.04) 0%,transparent 55%),
-             radial-gradient(ellipse at 85% 15%,rgba(71,197,255,.03) 0%,transparent 50%);}
 
-/* APP LAYOUT - Updated for collapse */
-.app{
-  position:relative;z-index:1;display:grid;
-  grid-template-columns: var(--sb-width) 1fr;
-  grid-template-rows: 52px 1fr;
-  height:100vh;
-  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--display);
+  /* Grid texture */
+  background-image:
+    linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
-.app.collapsed {--sb-width: 0px;}
 
-/* TOPBAR */
-.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;border-bottom:1px solid var(--border);
-  background:rgba(10,10,10,.96);backdrop-filter:blur(20px);}
-.tb-l{display:flex;align-items:center;gap:12px;}
+/* Ambient glows */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(212,255,71,0.04) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -10%;
+  width: 55%;
+  height: 55%;
+  background: radial-gradient(ellipse, rgba(71,212,255,0.03) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-/* Toggle Button */
+/* ══════════════ APP SHELL ══════════════ */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--sb) 1fr;
+  grid-template-rows: var(--top) 1fr;
+  height: 100vh;
+  transition: grid-template-columns 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+.app.collapsed { --sb: 0px; }
+
+/* ══════════════ TOPBAR ══════════════ */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: rgba(8,8,8,0.97);
+  border-bottom: 1px solid var(--border2);
+  backdrop-filter: blur(24px);
+  position: relative;
+  z-index: 10;
+}
+/* accent stripe at very top */
+.topbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--cyan), transparent);
+  opacity: 0.5;
+}
+
+.tb-l { display: flex; align-items: center; gap: 10px; }
+
 .sb-toggle {
-  background: transparent; border: 1px solid var(--border2); 
-  color: var(--text); cursor: pointer; border-radius: 4px;
-  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted3);
+  cursor: pointer;
+  border-radius: 5px;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
-.sb-toggle:hover { background: var(--surface2); border-color: var(--accent); }
+.sb-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
-.logobox{width:26px;height:26px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;}
-.logobox svg{width:14px;height:14px;}
-.logotxt{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;}
-.pill{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;}
-.pill-g{background:rgba(71,255,176,.1);color:var(--success);border:1px solid rgba(71,255,176,.2);}
-.pill-y{background:rgba(232,255,71,.1);color:var(--accent);border:1px solid rgba(232,255,71,.2);}
-.tb-r{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10px;color:var(--muted2);}
-.sep{color:var(--muted);}
-#learnCount{color:var(--accent);}
-
-/* SIDEBAR */
-.sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden; background: var(--bg);}
-.sb-content { min-width: 255px; height: 100%; display: flex; flex-direction: column; }
-.sb-scroll{flex:1;overflow-y:auto;padding:14px 10px;}
-.sb-scroll::-webkit-scrollbar{width:3px;}
-.sb-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.slabel{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);padding:0 6px;margin:16px 0 5px;}
-.slabel:first-child{margin-top:0;}
-.nav{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;
-  font-size:12px;font-weight:600;color:var(--muted2);cursor:pointer;
-  border:1px solid transparent;transition:all .15s;user-select:none;}
-.nav:hover{background:var(--surface2);color:var(--text);}
-.nav.active{background:var(--surface2);color:var(--accent);border-color:var(--border2);}
-.nav svg{width:14px;height:14px;flex-shrink:0;opacity:.6;}
-.nav.active svg{opacity:1;}
-.trait-section{padding:10px;border-top:1px solid var(--border);}
-.trait-title{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;}
-.chips{display:flex;flex-wrap:wrap;gap:4px;}
-.chip{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;
-  background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--muted3);white-space:nowrap;}
-
-/* MAIN */
-.main{display:flex;flex-direction:column;overflow:hidden;}
-.panel{display:none;flex-direction:column;height:calc(100vh - 52px);}
-.panel.active{display:flex;}
-
-/* CHAT STYLES (Keep existing) */
-.chat-top{padding:14px 22px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.mode-tabs{display:flex;gap:5px;flex-wrap:wrap;}
-.mtab{font-family:var(--mono);font-size:10px;padding:4px 11px;border-radius:4px;
-  border:1px solid var(--border);background:transparent;color:var(--muted2);cursor:pointer;transition:all .15s;}
-.mtab:hover{border-color:var(--border2);color:var(--text);}
-.mtab.active{border-color:var(--accent);color:var(--accent);background:rgba(232,255,71,.06);}
-.mode-desc{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5;}
-.messages{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:13px;scroll-behavior:smooth;}
-.messages::-webkit-scrollbar{width:3px;}
-.messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.mgroup{display:flex;flex-direction:column;gap:3px;}
-.mgroup.user{align-items:flex-end;}
-.mgroup.twin{align-items:flex-start;}
-.mlabel{font-family:var(--mono);font-size:9px;color:var(--muted);padding:0 3px;}
-.bubble{max-width:80%;padding:11px 15px;border-radius:12px;font-size:13px;line-height:1.65;animation:pop .2s ease;}
-@keyframes pop{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
-.mgroup.user .bubble{background:#1b3a5c;border:1px solid #2a5080;color:#cce4ff;border-bottom-right-radius:3px;}
-.mgroup.twin .bubble{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-bottom-left-radius:3px;}
-.vtag{display:inline-block;font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px;margin-bottom:5px;}
-.vtag.counter{background:rgba(255,107,107,.12);color:var(--danger);}
-.vtag.analysis{background:rgba(71,197,255,.1);color:var(--accent2);}
-.vtag.proxy{background:rgba(71,255,176,.1);color:var(--success);}
-.vtag.critique{background:rgba(255,107,107,.12);color:var(--danger);}
-.learn-bubble{max-width:80%;padding:7px 12px;border-radius:8px;font-family:var(--mono);font-size:10px;
-  background:rgba(232,255,71,.05);border:1px solid rgba(232,255,71,.15);color:var(--accent);animation:pop .2s ease;}
-.typing-wrap{display:flex;flex-direction:column;gap:3px;align-items:flex-start;}
-.typing{display:flex;gap:5px;align-items:center;padding:11px 15px;
-  background:var(--surface2);border:1px solid var(--border2);border-radius:12px;border-bottom-left-radius:3px;width:fit-content;}
-.typing span{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:dot 1.2s ease-in-out infinite;}
-.typing span:nth-child(2){animation-delay:.2s;}
-.typing span:nth-child(3){animation-delay:.4s;}
-@keyframes dot{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1);}}
-.input-area{padding:12px 22px 15px;border-top:1px solid var(--border);flex-shrink:0;}
-.input-wrap{display:flex;gap:10px;align-items:flex-end;background:var(--surface);
-  border:1px solid var(--border2);border-radius:10px;padding:9px 12px;transition:border-color .15s;}
-.input-wrap:focus-within{border-color:rgba(232,255,71,.25);}
-#userInput{flex:1;background:transparent;border:none;outline:none;color:var(--text);
-  font-family:var(--display);font-size:13px;resize:none;min-height:20px;max-height:110px;line-height:1.5;}
-#userInput::placeholder{color:var(--muted);}
-.sendbtn{width:32px;height:32px;border-radius:6px;background:var(--accent);border:none;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
-.sendbtn:hover{background:#d4eb38;transform:scale(.97);}
-.sendbtn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
-.sendbtn svg{width:14px;height:14px;}
-
-/* PANELS SHARED */
-.panel-head{padding:20px 22px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.panel-title{font-size:18px;font-weight:800;letter-spacing:-.02em;}
-.panel-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
-.panel-body{flex:1;overflow-y:auto;padding:20px 22px;}
-.panel-body::-webkit-scrollbar{width:3px;}
-.panel-body::-webkit-scrollbar-thumb{background:var(--border2);}
-
-/* API KEY SECTION IN PROFILE */
-.key-config { background: var(--surface2); border: 1px solid var(--accent); border-radius: 10px; padding: 16px; margin-bottom: 20px;}
-.key-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
-.key-input { 
-  flex: 1; background: var(--bg); border: 1px solid var(--border2); 
-  border-radius: 6px; padding: 8px 12px; color: var(--text); 
-  font-family: var(--mono); font-size: 11px; 
+.logo {
+  display: flex; align-items: center; gap: 8px;
+}
+.logo-mark {
+  width: 24px; height: 24px;
+  background: var(--accent);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 12px; height: 12px; }
+.logo-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text);
 }
 
-/* Rest of existing styles (History, Decision, Profile, etc.) */
-.session-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;}
-.sc-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);}
-.sc-head:hover{background:var(--surface2);}
-.sc-title{font-size:13px;font-weight:700;}
-.sc-meta{font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px;}
-.sc-chev{font-size:10px;color:var(--muted);transition:transform .2s;}
-.sc-body{padding:14px 16px;display:none;}
-.sc-body.open{display:block;}
-.hist-msg{font-size:12px;line-height:1.6;padding:6px 0;border-bottom:1px solid var(--border);}
-.hist-msg:last-child{border:none;}
-.hist-who{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px;}
-.hist-txt{color:var(--muted3);}
-.twin-hist .hist-txt{color:var(--text);}
-.empty-state{text-align:center;padding:60px 20px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2;}
+.status-pills { display: flex; gap: 5px; }
+.spill {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.06em;
+}
+.spill-live {
+  background: rgba(71,255,176,0.1);
+  color: var(--green);
+  border: 1px solid rgba(71,255,176,0.22);
+  animation: pulse-live 2.5s ease-in-out infinite;
+}
+@keyframes pulse-live {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+.spill-model {
+  background: rgba(212,255,71,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(212,255,71,0.2);
+}
 
-.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.pcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
-.pcard-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;}
-.tg{margin-bottom:12px;}
-.tg-lbl{font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:5px;}
-.tg-chips{display:flex;flex-wrap:wrap;gap:4px;}
-.tg-chip{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;
-  background:rgba(232,255,71,.06);border:1px solid rgba(232,255,71,.2);color:var(--accent);}
-.tg-chip.world{background:rgba(71,197,255,.06);border-color:rgba(71,197,255,.2);color:var(--accent2);}
-.tg-chip.comms{background:rgba(71,255,176,.06);border-color:rgba(71,255,176,.2);color:var(--success);}
-.tg-chip.builder{background:rgba(255,107,107,.06);border-color:rgba(255,107,107,.2);color:var(--danger);}
-.learned-list{display:flex;flex-direction:column;gap:6px;}
-.learned-item{font-size:11px;color:var(--muted3);padding:7px 10px;border-radius:6px;
-  background:rgba(232,255,71,.04);border:1px solid rgba(232,255,71,.1);line-height:1.5;}
-.learned-item::before{content:'↳ ';color:var(--accent);font-family:var(--mono);}
-.ptag{display:inline-block;font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:2px;
-  background:rgba(232,255,71,.1);color:var(--accent);border:1px solid rgba(232,255,71,.2);margin-left:5px;}
+.tb-r {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted2);
+}
+.tb-stat { display: flex; align-items: center; gap: 5px; }
+.tb-stat-val { color: var(--accent); font-weight: 500; }
+.tb-divider { width: 1px; height: 14px; background: var(--border2); }
 
-.form-field{margin-bottom:14px;}
-.form-field label{font-family:var(--mono);font-size:10px;color:var(--muted2);display:block;margin-bottom:5px;}
-.form-field input,.form-field textarea,.form-field select{
-  width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:8px;
-  padding:9px 13px;color:var(--text);font-family:var(--display);font-size:13px;outline:none;transition:border-color .15s;}
-.form-field input:focus,.form-field textarea:focus{border-color:rgba(232,255,71,.3);}
-.form-field textarea{resize:vertical;min-height:75px;line-height:1.5;}
-.form-field select option{background:var(--surface2);}
-.abtn{padding:10px 22px;border-radius:7px;background:var(--accent);color:#0a0a0a;
-  font-family:var(--display);font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .15s;}
-.abtn:hover{background:#d4eb38;transform:translateY(-1px);}
-.abtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.dresult{margin-top:18px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:20px;animation:pop .3s ease;}
-.dresult-verdict{font-size:19px;font-weight:800;margin-bottom:12px;line-height:1.3;}
-.dresult-sec{margin-top:12px;}
-.dresult-slbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
-.dresult-sbody{font-size:13px;line-height:1.65;color:var(--muted3);}
+/* ══════════════ SIDEBAR ══════════════ */
+.sidebar {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(10,10,10,0.6);
+}
+.sb-inner {
+  min-width: 268px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-.spinner{width:13px;height:13px;border:2px solid rgba(10,10,10,.3);border-top-color:#0a0a0a;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;}
-@keyframes spin{to{transform:rotate(360deg);}}
-@media(max-width:640px){.app{grid-template-columns:1fr;}.sidebar{display:none;}.profile-grid{grid-template-columns:1fr;}}
+.sb-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 8px;
+}
+.sb-scroll::-webkit-scrollbar { width: 2px; }
+.sb-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sb-section-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 8px;
+  margin: 14px 0 4px;
+}
+.sb-section-label:first-child { margin-top: 2px; }
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted2);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+  margin-bottom: 1px;
+}
+.nav:hover { background: var(--surface2); color: var(--text); }
+.nav.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(212,255,71,0.18);
+}
+.nav-icon {
+  width: 14px; height: 14px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 8px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(212,255,71,0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* Sidebar traits footer */
+.sb-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px 10px 12px;
+}
+.sf-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.chip {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border2);
+  color: var(--muted3);
+  white-space: nowrap;
+  cursor: default;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--border3); color: var(--text); }
+
+/* ══════════════ MAIN AREA ══════════════ */
+.main { display: flex; flex-direction: column; overflow: hidden; }
+
+.panel { display: none; flex-direction: column; height: calc(100vh - var(--top)); }
+.panel.active { display: flex; }
+
+/* ══════════════ CHAT PANEL ══════════════ */
+.chat-header {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mode-tabs { display: flex; gap: 4px; }
+.mtab {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.mtab:hover { border-color: var(--border3); color: var(--text); }
+.mtab.active {
+  border-color: rgba(212,255,71,0.4);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.mode-pipe {
+  width: 1px; height: 18px;
+  background: var(--border2);
+}
+.mode-desc-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted2);
+  flex: 1;
+}
+.mode-desc-badge b { color: var(--text2); font-weight: 500; }
+
+/* Messages */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 2px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.mgroup { display: flex; flex-direction: column; gap: 3px; }
+.mgroup.user { align-items: flex-end; }
+.mgroup.twin { align-items: flex-start; }
+
+.mlabel {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--muted);
+  padding: 0 4px;
+  letter-spacing: 0.1em;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.68;
+  animation: msg-in 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mgroup.user .bubble {
+  background: linear-gradient(135deg, #132845 0%, #0f2038 100%);
+  border: 1px solid rgba(71,148,255,0.2);
+  color: #c8dcf8;
+  border-bottom-right-radius: 2px;
+}
+.mgroup.twin .bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-bottom-left-radius: 2px;
+}
+
+.vtag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 7.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-bottom: 7px;
+}
+.vtag::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+.vtag.analysis { background: rgba(71,212,255,0.08); color: var(--cyan); border: 1px solid rgba(71,212,255,0.2); }
+.vtag.counter  { background: rgba(255,170,71,0.08); color: var(--orange); border: 1px solid rgba(255,170,71,0.2); }
+.vtag.proxy    { background: rgba(71,255,176,0.08); color: var(--green); border: 1px solid rgba(71,255,176,0.2); }
+.vtag.critique { background: rgba(255,85,85,0.08); color: var(--danger); border: 1px solid rgba(255,85,85,0.2); }
+
+.learn-bubble {
+  max-width: 78%;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  background: linear-gradient(90deg, rgba(212,255,71,0.06), rgba(212,255,71,0.03));
+  border: 1px solid rgba(212,255,71,0.18);
+  border-left: 2px solid var(--accent);
+  color: var(--accent);
+  animation: msg-in 0.22s ease;
+  line-height: 1.6;
+}
+.learn-bubble::before { content: 'LEARNED → '; opacity: 0.5; }
+
+/* Typing indicator */
+.typing-wrap { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 11px 15px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  border-bottom-left-radius: 2px;
+  width: fit-content;
+}
+.typing span {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: dot 1.3s ease-in-out infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.18s; }
+.typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes dot {
+  0%,80%,100% { opacity: 0.25; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* Input area */
+.input-area {
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.input-wrap {
+  display: flex;
+  gap: 9px;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 9px 11px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-wrap:focus-within {
+  border-color: rgba(212,255,71,0.3);
+  box-shadow: 0 0 0 3px rgba(212,255,71,0.04);
+}
+#userInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 13px;
+  resize: none;
+  min-height: 20px;
+  max-height: 110px;
+  line-height: 1.55;
+}
+#userInput::placeholder { color: var(--muted); }
+.send-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.send-btn:hover { background: #c8f030; transform: scale(0.96); }
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+.send-btn svg { width: 13px; height: 13px; }
+
+/* ══════════════ SHARED PANEL STYLES ══════════════ */
+.panel-hd {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.panel-sub {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted2);
+  margin-top: 3px;
+}
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+.panel-body::-webkit-scrollbar { width: 2px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ══════════════ PROFILE PAGE ══════════════ */
+.api-card {
+  background: linear-gradient(135deg, rgba(212,255,71,0.06), rgba(212,255,71,0.02));
+  border: 1px solid rgba(212,255,71,0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.ac-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.ac-sub { font-size: 11px; color: var(--muted2); margin-bottom: 10px; }
+.key-row { display: flex; gap: 8px; }
+.key-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 11px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.key-input:focus { border-color: rgba(212,255,71,0.3); }
+
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.pcard-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted2);
+  margin-bottom: 12px;
+}
+.trait-group { margin-bottom: 10px; }
+.tg-name {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.tg-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.tc {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tc-y { background: rgba(212,255,71,0.06); border-color: rgba(212,255,71,0.22); color: var(--accent); }
+.tc-b { background: rgba(71,212,255,0.06); border-color: rgba(71,212,255,0.22); color: var(--cyan); }
+.tc-g { background: rgba(71,255,176,0.06); border-color: rgba(71,255,176,0.22); color: var(--green); }
+.tc-r { background: rgba(255,85,85,0.06); border-color: rgba(255,85,85,0.22); color: var(--danger); }
+.tc-o { background: rgba(255,170,71,0.06); border-color: rgba(255,170,71,0.22); color: var(--orange); }
+
+.learned-wrap { display: flex; flex-direction: column; gap: 5px; }
+.li {
+  font-size: 11px;
+  color: var(--text2);
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: rgba(212,255,71,0.03);
+  border: 1px solid rgba(212,255,71,0.1);
+  border-left: 2px solid var(--accent);
+  line-height: 1.55;
+}
+.li-empty { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+
+/* ══════════════ DECISION ENGINE ══════════════ */
+.form-field { margin-bottom: 13px; }
+.form-field label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  display: block;
+  margin-bottom: 5px;
+}
+.form-field input,
+.form-field textarea,
+.form-field select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-field input:focus,
+.form-field textarea:focus { border-color: rgba(212,255,71,0.3); }
+.form-field textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+.form-field select { cursor: pointer; }
+.form-field select option { background: var(--surface2); }
+
+.d-result {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 18px;
+  animation: msg-in 0.25s ease;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text2);
+}
+.d-verdict {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ══════════════ HISTORY ══════════════ */
+.session-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.sc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sc-head:hover { background: var(--surface2); }
+.sc-title { font-size: 12px; font-weight: 600; }
+.sc-meta { font-family: var(--mono); font-size: 8.5px; color: var(--muted2); margin-top: 2px; }
+.sc-body { padding: 12px 15px; display: none; border-top: 1px solid var(--border); }
+.sc-body.open { display: block; }
+.hm { font-size: 11.5px; line-height: 1.6; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.hm:last-child { border: none; padding-bottom: 0; }
+.hm-who { font-family: var(--mono); font-size: 8px; color: var(--muted); margin-bottom: 2px; }
+.hm-txt { color: var(--text2); }
+.hm.twin .hm-txt { color: var(--text); }
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 2.2;
+}
+
+/* ══════════════ BUTTONS ══════════════ */
+.abtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #0a0a0a;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.abtn:hover { background: #c8f030; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,255,71,0.2); }
+.abtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.spinner {
+  width: 11px; height: 11px;
+  border: 1.5px solid rgba(0,0,0,0.25);
+  border-top-color: #0a0a0a;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 640px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .profile-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 <div class="app" id="app">
 
+<!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <header class="topbar">
   <div class="tb-l">
-    <button class="sb-toggle" onclick="toggleSidebar()">
-      <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 3.5h11M1.5 7h11M1.5 10.5h11"/></svg>
+    <button class="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M1.5 3.5h11M1.5 7h11M1.5 10.5h11"/>
+      </svg>
     </button>
-    <div class="logobox">
-      <svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.5" fill="#0a0a0a"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.8 2.8l1.4 1.4M9.8 9.8l1.4 1.4M9.8 4.2l1.4-1.4M2.8 11.2l1.4-1.4" stroke="#0a0a0a" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="2" fill="#0a0a0a"/>
+          <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.6 2.6l1 1M8.4 8.4l1 1M8.4 3.6l1-1M2.6 9.4l1-1" stroke="#0a0a0a" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">Digital Twin</span>
     </div>
-    <span class="logotxt">Digital Twin</span>
-    <span class="pill pill-g">● LIVE</span>
-    <span class="pill pill-y">Llama 3.3 · Groq</span>
+    <div class="status-pills">
+      <span class="spill spill-live">● LIVE</span>
+      <span class="spill spill-model">Llama 3.3 · Groq</span>
+    </div>
   </div>
   <div class="tb-r">
+    <div class="tb-stat">
+      <span>LEARNED</span>
+      <span class="tb-stat-val" id="learnCount">0</span>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-stat">
+      <span>EXCHANGES</span>
+      <span class="tb-stat-val" id="exchCount">0</span>
+    </div>
+    <div class="tb-divider"></div>
     <span id="clock">--:--</span>
-    <span class="sep">|</span>
-    <span id="learnCount">0 learned</span>
-    <span class="sep">|</span>
-    <span id="exchCount">0 exchanges</span>
   </div>
 </header>
 
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
 <aside class="sidebar">
-  <div class="sb-content">
+  <div class="sb-inner">
     <div class="sb-scroll">
-      <div class="slabel">Core</div>
+      <div class="sb-section-label">Core</div>
       <div class="nav active" onclick="switchPanel('chat',this)">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12.25 9.33A1.17 1.17 0 0 1 11.08 10.5H3.5L1.17 12.83V2.92A1.17 1.17 0 0 1 2.33 1.75h8.75a1.17 1.17 0 0 1 1.17 1.17v6.41z"/></svg>
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12.25 9.33A1.17 1.17 0 0 1 11.08 10.5H3.5L1.17 12.83V2.92A1.17 1.17 0 0 1 2.33 1.75h8.75a1.17 1.17 0 0 1 1.17 1.17v6.41z"/></svg>
+        </span>
         Talk to Twin
+        <span class="nav-badge" id="exchBadge">0</span>
       </div>
       <div class="nav" onclick="switchPanel('decision',this)">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 1v12M1 7h12M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+        </span>
         Decision Engine
       </div>
-      <div class="slabel">Memory</div>
+
+      <div class="sb-section-label">Memory</div>
       <div class="nav" onclick="switchPanel('history',this)">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.75" y="1.75" width="10.5" height="10.5" rx="1.5"/><path d="M4.5 5.25h5M4.5 7h5M4.5 8.75h3"/></svg>
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.75" y="1.75" width="10.5" height="10.5" rx="1.5"/><path d="M4.5 5.25h5M4.5 7h5M4.5 8.75h3"/></svg>
+        </span>
         Saved Conversations
       </div>
       <div class="nav" onclick="switchPanel('profile',this)">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="4.5" r="2.5"/><path d="M1.75 12.25c0-2.9 2.35-5.25 5.25-5.25s5.25 2.35 5.25 5.25"/></svg>
-        My Profile / Settings
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="4.5" r="2.5"/><path d="M1.75 12.25c0-2.9 2.35-5.25 5.25-5.25s5.25 2.35 5.25 5.25"/></svg>
+        </span>
+        Profile & Settings
+      </div>
+
+      <div class="sb-section-label">System</div>
+      <div class="nav" onclick="switchPanel('profile',this)">
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.25"/><path d="M7 4.5v2.75l1.75 1.75"/></svg>
+        </span>
+        API Configuration
       </div>
     </div>
-    <div class="trait-section">
-      <div class="trait-title">Core Traits</div>
+
+    <div class="sb-footer">
+      <div class="sf-label">Active Traits</div>
       <div class="chips">
-        <span class="chip">Systems Thinker</span><span class="chip">First Principles</span>
-        <span class="chip">Contrarian</span><span class="chip">Ship Fast</span>
-        <span class="chip">India-First</span><span class="chip">Blunt & Direct</span>
-        <span class="chip">Skeptic by Default</span><span class="chip">Zero-Cost Stack</span>
+        <span class="chip">Systems Thinker</span>
+        <span class="chip">First Principles</span>
+        <span class="chip">Contrarian</span>
+        <span class="chip">India-First</span>
+        <span class="chip">Blunt & Direct</span>
+        <span class="chip">Zero-Cost Stack</span>
+        <span class="chip">Shovel Manufacturer</span>
+        <span class="chip">Vibe Coder</span>
+        <span class="chip">OSINT Mindset</span>
+        <span class="chip">Solo Operator</span>
+        <span class="chip">Ship Fast</span>
+        <span class="chip">Pre-College Founder</span>
       </div>
     </div>
   </div>
 </aside>
 
+<!-- ═══════════════════ MAIN ═══════════════════ -->
 <main class="main">
 
+  <!-- ── CHAT ── -->
   <div class="panel active" id="panel-chat">
-    <div class="chat-top">
+    <div class="chat-header">
       <div class="mode-tabs">
         <button class="mtab active" onclick="setMode('think',this)">Think Like Me</button>
         <button class="mtab" onclick="setMode('debate',this)">Debate Me</button>
         <button class="mtab" onclick="setMode('delegate',this)">Delegate</button>
         <button class="mtab" onclick="setMode('critique',this)">Critique</button>
       </div>
-      <div class="mode-desc" id="modeDesc">Twin breaks down the problem analytically — big picture first, then the details that matter.</div>
+      <div class="mode-pipe"></div>
+      <div class="mode-desc-badge" id="modeDesc">Big picture analysis first — then the details that actually matter.</div>
     </div>
     <div class="messages" id="messages">
       <div class="mgroup twin">
         <div class="mlabel">TWIN</div>
-        <div class="bubble">I'm your digital twin. <b>Wait!</b> Before we start, make sure you've added your <b>Groq API Key</b> in the "My Profile" section so I can think.</div>
+        <div class="bubble">
+          I'm your digital twin. Before we start — add your <b>Groq API Key</b> in <b>Profile & Settings</b> so I can actually think.
+        </div>
       </div>
     </div>
     <div class="input-area">
       <div class="input-wrap">
         <textarea id="userInput" placeholder="Think, argue, delegate, stress-test..." rows="1"></textarea>
-        <button class="sendbtn" id="sendBtn" onclick="sendMessage()">
-          <svg viewBox="0 0 14 14" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11.5V2.5M3 5.5l4-4 4 4"/></svg>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 11.5V2.5M3 5.5l4-4 4 4"/>
+          </svg>
         </button>
       </div>
     </div>
   </div>
 
+  <!-- ── DECISION ENGINE ── -->
   <div class="panel" id="panel-decision">
-    <div class="panel-head">
+    <div class="panel-hd">
       <div class="panel-title">Decision Engine</div>
       <div class="panel-sub">Run any decision through your framework. Get a verdict — not a list of considerations.</div>
     </div>
     <div class="panel-body">
-      <div class="form-field"><label>THE DECISION</label><input type="text" id="dTitle" placeholder="e.g. Should I go full-time on my startup?"></div>
-      <div class="form-field"><label>CONTEXT & OPTIONS</label><textarea id="dContext" placeholder="Describe the situation, the options, what actually matters to you..."></textarea></div>
-      <div class="form-field"><label>STAKES</label>
+      <div class="form-field">
+        <label>The Decision</label>
+        <input type="text" id="dTitle" placeholder="e.g. Should I go full-time on my startup?">
+      </div>
+      <div class="form-field">
+        <label>Context & Options</label>
+        <textarea id="dContext" placeholder="Describe the situation, the options, what actually matters to you..."></textarea>
+      </div>
+      <div class="form-field">
+        <label>Stakes Level</label>
         <select id="dStakes">
           <option value="low">Low — reversible, limited blast radius</option>
           <option value="medium" selected>Medium — meaningful consequences</option>
@@ -310,94 +882,152 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     </div>
   </div>
 
+  <!-- ── HISTORY ── -->
   <div class="panel" id="panel-history">
-    <div class="panel-head">
+    <div class="panel-hd">
       <div class="panel-title">Saved Conversations</div>
-      <div class="panel-sub">All sessions saved in your browser. Memory resets each session — but conversations don't.</div>
+      <div class="panel-sub">Sessions stored in your browser. Memory resets each session — conversations don't.</div>
     </div>
     <div class="panel-body" id="historyBody"></div>
   </div>
 
+  <!-- ── PROFILE ── -->
   <div class="panel" id="panel-profile">
-    <div class="panel-head">
-      <div class="panel-title">My Profile & Settings</div>
-      <div class="panel-sub">Configure your twin and your API access.</div>
+    <div class="panel-hd">
+      <div class="panel-title">Profile & Settings</div>
+      <div class="panel-sub">Configure your twin, your traits, and your API access.</div>
     </div>
     <div class="panel-body">
-      
-      <div class="key-config">
-        <div class="pcard-label" style="color:var(--accent)">Groq API Configuration</div>
-        <div style="font-size: 11px; color: var(--muted3); margin-bottom: 10px;">Your key is stored locally in your browser and never sent anywhere except Groq.</div>
-        <div class="key-input-wrap">
+
+      <!-- API Key -->
+      <div class="api-card">
+        <div class="ac-label">Groq API Configuration</div>
+        <div class="ac-sub">Your key is stored locally in your browser and never sent anywhere except Groq's servers.</div>
+        <div class="key-row">
           <input type="password" id="groqKeyInput" class="key-input" placeholder="gsk_...">
-          <button class="abtn" style="padding: 8px 15px; font-size: 11px;" onclick="saveApiKey()">Save Key</button>
+          <button class="abtn" style="padding:7px 14px;font-size:11px;" onclick="saveApiKey()">Save Key</button>
         </div>
       </div>
 
       <div class="profile-grid">
+
+        <!-- Thinking Style -->
         <div class="pcard">
           <div class="pcard-label">Thinking Style</div>
-          <div class="tg"><div class="tg-lbl">How you think</div>
+          <div class="trait-group">
+            <div class="tg-name">How you think</div>
             <div class="tg-chips">
-              <span class="tg-chip">Systems Thinker</span><span class="tg-chip">First Principles</span>
-              <span class="tg-chip">Pattern Recognizer</span><span class="tg-chip">Contrarian</span>
-              <span class="tg-chip">Pragmatist</span><span class="tg-chip">Long-Term Oriented</span>
-              <span class="tg-chip">Visionary</span><span class="tg-chip">Critical Thinker</span>
-              <span class="tg-chip">Analytical</span><span class="tg-chip">Big Picture</span>
+              <span class="tc tc-y">Systems Thinker</span>
+              <span class="tc tc-y">First Principles</span>
+              <span class="tc tc-y">Pattern Recognizer</span>
+              <span class="tc tc-y">Contrarian</span>
+              <span class="tc tc-y">Analytical</span>
+              <span class="tc tc-y">Big Picture First</span>
+              <span class="tc tc-y">Long-Term Oriented</span>
+              <span class="tc tc-y">Framework Builder</span>
+              <span class="tc tc-y">Research-to-Product</span>
+              <span class="tc tc-y">Multi-Axis Thinker</span>
             </div>
           </div>
-          <div class="tg"><div class="tg-lbl">Builder philosophy</div>
+          <div class="trait-group">
+            <div class="tg-name">Builder philosophy</div>
             <div class="tg-chips">
-              <span class="tg-chip builder">Ship Fast</span><span class="tg-chip builder">Build Deep</span>
-              <span class="tg-chip builder">Solo Operator</span><span class="tg-chip builder">Infra Over Products</span>
-              <span class="tg-chip builder">Zero-Cost Stack</span><span class="tg-chip builder">Prototype First</span>
-              <span class="tg-chip builder">Obsessive Builder</span>
+              <span class="tc tc-r">Ship Fast</span>
+              <span class="tc tc-r">Build Deep</span>
+              <span class="tc tc-r">Solo Operator</span>
+              <span class="tc tc-r">Infra Over Products</span>
+              <span class="tc tc-r">Zero-Cost Stack</span>
+              <span class="tc tc-r">Prototype First</span>
+              <span class="tc tc-r">Vibe Coder</span>
+              <span class="tc tc-r">AI-Native Builder</span>
+              <span class="tc tc-r">Data Moat Builder</span>
+              <span class="tc tc-r">Pre-College Founder</span>
+              <span class="tc tc-r">Multi-Repo Juggler</span>
             </div>
           </div>
         </div>
+
+        <!-- Worldview -->
         <div class="pcard">
-          <div class="pcard-label">Worldview</div>
-          <div class="tg"><div class="tg-lbl">How you see the world</div>
+          <div class="pcard-label">Worldview & Communication</div>
+          <div class="trait-group">
+            <div class="tg-name">How you see the world</div>
             <div class="tg-chips">
-              <span class="tg-chip world">Techno-Optimist</span><span class="tg-chip world">Geopolitical Realist</span>
-              <span class="tg-chip world">Skeptic by Default</span><span class="tg-chip world">Builder &gt; Critic</span>
-              <span class="tg-chip world">Underdog Mentality</span><span class="tg-chip world">India-First</span>
-              <span class="tg-chip world">Think Global Scale</span>
+              <span class="tc tc-b">Techno-Optimist</span>
+              <span class="tc tc-b">Geopolitical Realist</span>
+              <span class="tc tc-b">Skeptic by Default</span>
+              <span class="tc tc-b">Builder > Critic</span>
+              <span class="tc tc-b">Underdog Mentality</span>
+              <span class="tc tc-b">India-First</span>
+              <span class="tc tc-b">Think Global Scale</span>
+              <span class="tc tc-b">OSINT Mindset</span>
+              <span class="tc tc-b">Semiconductor Aware</span>
+              <span class="tc tc-b">Shovel Manufacturer</span>
+              <span class="tc tc-b">Anti-Hype Filter</span>
             </div>
           </div>
-          <div class="tg"><div class="tg-lbl">Communication</div>
+          <div class="trait-group">
+            <div class="tg-name">Communication style</div>
             <div class="tg-chips">
-              <span class="tg-chip comms">Blunt &amp; Direct</span><span class="tg-chip comms">No Fluff</span>
-              <span class="tg-chip comms">Intuition-First</span><span class="tg-chip comms">Data-Backed</span>
-              <span class="tg-chip comms">Storyteller</span>
+              <span class="tc tc-g">Blunt & Direct</span>
+              <span class="tc tc-g">No Fluff</span>
+              <span class="tc tc-g">Terse Writer</span>
+              <span class="tc tc-g">Directive</span>
+              <span class="tc tc-g">Intuition-First</span>
+              <span class="tc tc-g">Data-Backed</span>
+              <span class="tc tc-g">Fast Decider</span>
+            </div>
+          </div>
+          <div class="trait-group">
+            <div class="tg-name">Domain expertise</div>
+            <div class="tg-chips">
+              <span class="tc tc-o">AI Infrastructure</span>
+              <span class="tc tc-o">OSINT & GeoInt</span>
+              <span class="tc tc-o">Semiconductor Strategy</span>
+              <span class="tc tc-o">Multi-Agent Systems</span>
+              <span class="tc tc-o">Materials Science</span>
+              <span class="tc tc-o">Full-Stack Dev</span>
+              <span class="tc tc-o">Geopolitics</span>
+              <span class="tc tc-o">Civil Engineering Tech</span>
             </div>
           </div>
         </div>
+
+        <!-- Learned this session -->
         <div class="pcard" style="grid-column:1/-1">
-          <div class="pcard-label">Learned This Session <span class="ptag" id="learnedBadge">0</span></div>
-          <div class="learned-list" id="learnedList">
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">Nothing learned yet — start a conversation.</div>
+          <div class="pcard-label" style="display:flex;align-items:center;gap:8px;">
+            Learned This Session
+            <span style="font-family:var(--mono);font-size:8px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(212,255,71,0.25);border-radius:3px;padding:1px 6px;" id="learnedBadge">0</span>
+          </div>
+          <div class="learned-wrap" id="learnedList">
+            <div class="li-empty">Nothing learned yet — start a conversation.</div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
 
 </main>
 </div>
+
 <script>
 const API = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
-const STORAGE_KEY = 'dt_sessions_v2';
+const STORAGE_KEY = 'dt_sessions_v3';
 const API_KEY_STORAGE = 'dt_groq_key';
 
-const TWIN_PERSONA = `You are a digital twin of the user. You ARE them — think, reason, and communicate exactly as they do. (Standard traits: Systems Thinker, First Principles, India-First, Blunt/Direct). Use "I" - you are not an assistant, you are the user's digital reflection.`;
+const TWIN_PERSONA = `You are a digital twin of the user. You ARE them — think, reason, and communicate exactly as they do.
+
+Core traits: Systems Thinker, First Principles, India-First, Blunt/Direct, No Fluff, Contrarian, Anti-Hype, Shovel Manufacturer mindset, OSINT awareness, Semiconductor strategy awareness, Pre-college founder, Vibe coder, Zero-cost stack, Multi-agent systems interest, Data moat builder, Geopolitical realist.
+
+Use "I" — you are not an assistant, you are the user's digital reflection. Be terse. No corporate-speak. If you learn something new about the user from the conversation, output it on a new line as: // TWIN LEARNED: [one-line insight]`;
 
 const modeMeta = {
-  think:    {desc:'Twin breaks down the problem analytically — big picture first, then the details that matter.',tag:'ANALYSIS',cls:'analysis'},
-  debate:   {desc:"Twin argues hard against your position. Pushes with evidence. Won't fold easily.",tag:'COUNTER',cls:'counter'},
-  delegate: {desc:'Twin answers as you — acts as your proxy, makes calls on your behalf.',tag:'AS YOU',cls:'proxy'},
-  critique: {desc:'Twin stress-tests your idea. Finds every flaw. No mercy, no noise.',tag:'CRITIQUE',cls:'critique'}
+  think:    { desc: 'Big picture analysis first — then the details that actually matter.', tag: 'ANALYSIS', cls: 'analysis' },
+  debate:   { desc: "Argues hard against your position. Pushes with evidence. Won't fold easily.", tag: 'COUNTER', cls: 'counter' },
+  delegate: { desc: 'Acts as your proxy — makes calls on your behalf exactly as you would.', tag: 'AS YOU', cls: 'proxy' },
+  critique: { desc: 'Stress-tests your idea. Finds every flaw. No mercy, no noise.', tag: 'CRITIQUE', cls: 'critique' }
 };
 
 let mode = 'think';
@@ -406,182 +1036,217 @@ let sessionMessages = [];
 let learnedThings = [];
 let exchanges = 0;
 const sessionId = Date.now();
-const sessionStart = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+const sessionStart = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-// Load API Key on Init
+// Init
 document.getElementById('groqKeyInput').value = localStorage.getItem(API_KEY_STORAGE) || '';
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}, 1000);
+document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+// Input auto-resize
+document.getElementById('userInput').addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+});
+document.getElementById('userInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
 
 function saveApiKey() {
   const val = document.getElementById('groqKeyInput').value.trim();
   localStorage.setItem(API_KEY_STORAGE, val);
-  alert('API Key saved successfully.');
+  const btn = event.target;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save Key', 2000);
+}
+function getApiKey() { return localStorage.getItem(API_KEY_STORAGE); }
+
+function toggleSidebar() { document.getElementById('app').classList.toggle('collapsed'); }
+
+function switchPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'history') renderHistory();
 }
 
-function getApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE);
-}
-
-function toggleSidebar() {
-  document.getElementById('app').classList.toggle('collapsed');
-}
-
-// Existing Logic...
-setInterval(()=>{ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); },1000);
-document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-
-document.getElementById('userInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px';});
-document.getElementById('userInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
-
-function switchPanel(name,el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('active'));
-  document.getElementById('panel-'+name).classList.add('active');
-  if(el)el.classList.add('active');
-  if(name==='history')renderHistory();
-}
-
-function setMode(m,btn){
-  mode=m;
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+function setMode(m, btn) {
+  mode = m;
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('modeDesc').textContent=modeMeta[m].desc;
+  document.getElementById('modeDesc').textContent = modeMeta[m].desc;
 }
 
-function appendMsg(role,text,meta){
-  const msgs=document.getElementById('messages');
-  const g=document.createElement('div');g.className='mgroup '+(role==='user'?'user':'twin');
-  const lbl=document.createElement('div');lbl.className='mlabel';lbl.textContent=role==='user'?'YOU':'TWIN';
-  const b=document.createElement('div');b.className='bubble';
-  if(meta&&role==='twin'){const v=document.createElement('div');v.className='vtag '+meta.cls;v.textContent=meta.tag;b.appendChild(v);b.appendChild(document.createElement('br'));}
+function appendMsg(role, text, meta) {
+  const msgs = document.getElementById('messages');
+  const g = document.createElement('div'); g.className = 'mgroup ' + (role === 'user' ? 'user' : 'twin');
+  const lbl = document.createElement('div'); lbl.className = 'mlabel'; lbl.textContent = role === 'user' ? 'YOU' : 'TWIN';
+  const b = document.createElement('div'); b.className = 'bubble';
+  if (meta && role === 'twin') {
+    const v = document.createElement('div'); v.className = 'vtag ' + meta.cls; v.textContent = meta.tag;
+    b.appendChild(v); b.appendChild(document.createElement('br'));
+  }
   b.appendChild(document.createTextNode(text));
-  g.appendChild(lbl);g.appendChild(b);msgs.appendChild(g);msgs.scrollTop=msgs.scrollHeight;
+  g.appendChild(lbl); g.appendChild(b); msgs.appendChild(g);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
-function appendLearn(text){
-  const msgs=document.getElementById('messages');
-  const g=document.createElement('div');g.className='mgroup twin';
-  const lbl=document.createElement('div');lbl.className='mlabel';lbl.textContent='TWIN LEARNED';
-  const b=document.createElement('div');b.className='learn-bubble';b.textContent=text;
-  g.appendChild(lbl);g.appendChild(b);msgs.appendChild(g);msgs.scrollTop=msgs.scrollHeight;
+function appendLearn(text) {
+  const msgs = document.getElementById('messages');
+  const g = document.createElement('div'); g.className = 'mgroup twin';
+  const lbl = document.createElement('div'); lbl.className = 'mlabel'; lbl.textContent = 'TWIN LEARNED';
+  const b = document.createElement('div'); b.className = 'learn-bubble'; b.textContent = text;
+  g.appendChild(lbl); g.appendChild(b); msgs.appendChild(g);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
-function showTyping(){
-  const msgs=document.getElementById('messages');
-  const w=document.createElement('div');w.className='typing-wrap';w.id='typing';
-  const lbl=document.createElement('div');lbl.className='mlabel';lbl.textContent='TWIN';
-  const t=document.createElement('div');t.className='typing';t.innerHTML='<span></span><span></span><span></span>';
-  w.appendChild(lbl);w.appendChild(t);msgs.appendChild(w);msgs.scrollTop=msgs.scrollHeight;
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const w = document.createElement('div'); w.className = 'typing-wrap'; w.id = 'typing';
+  const lbl = document.createElement('div'); lbl.className = 'mlabel'; lbl.textContent = 'TWIN';
+  const t = document.createElement('div'); t.className = 'typing';
+  t.innerHTML = '<span></span><span></span><span></span>';
+  w.appendChild(lbl); w.appendChild(t); msgs.appendChild(w);
+  msgs.scrollTop = msgs.scrollHeight;
 }
-function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
 
-async function sendMessage(){
+async function sendMessage() {
   const apiKey = getApiKey();
-  if(!apiKey) {
-    alert("Please enter your Groq API Key in 'My Profile' first.");
+  if (!apiKey) {
+    alert("Add your Groq API Key in Profile & Settings first.");
     switchPanel('profile', document.querySelectorAll('.nav')[3]);
     return;
   }
-
-  const inp=document.getElementById('userInput');
-  const text=inp.value.trim();if(!text)return;
-  const btn=document.getElementById('sendBtn');btn.disabled=true;
-  inp.value='';inp.style.height='auto';
-  appendMsg('user',text);
-  sessionMessages.push({role:'user',content:text});
-  history.push({role:'user',content:`[${mode.toUpperCase()} MODE] ${text}`});
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim(); if (!text) return;
+  const btn = document.getElementById('sendBtn'); btn.disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  appendMsg('user', text);
+  sessionMessages.push({ role: 'user', content: text });
+  history.push({ role: 'user', content: `[${mode.toUpperCase()} MODE] ${text}` });
   showTyping();
-  try{
-    const res=await fetch(API,{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:MODEL,max_tokens:900,
-        messages:[{role:'system',content:TWIN_PERSONA},...history]})});
-    const data=await res.json();
-    if(data.error) throw new Error(data.error.message);
-    let reply=data.choices?.[0]?.message?.content||'No response.';
-    
-    // Learning Logic
-    let learned=null;
-    const lm=reply.match(/\/\/ TWIN LEARNED:\s*(.+)/);
-    if(lm){learned=lm[1].trim();reply=reply.replace(/\/\/ TWIN LEARNED:.*/,'').trim();
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: MODEL, max_tokens: 900, messages: [{ role: 'system', content: TWIN_PERSONA }, ...history] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let reply = data.choices?.[0]?.message?.content || 'No response.';
+    let learned = null;
+    const lm = reply.match(/\/\/ TWIN LEARNED:\s*(.+)/);
+    if (lm) {
+      learned = lm[1].trim();
+      reply = reply.replace(/\/\/ TWIN LEARNED:.*/g, '').trim();
       learnedThings.push(learned);
-      document.getElementById('learnCount').textContent=learnedThings.length+' learned';
-      document.getElementById('learnedBadge').textContent=learnedThings.length;
-      updateLearnedList();}
-
-    history.push({role:'assistant',content:reply});
-    sessionMessages.push({role:'twin',content:reply});
+      document.getElementById('learnCount').textContent = learnedThings.length;
+      document.getElementById('learnedBadge').textContent = learnedThings.length;
+      updateLearnedList();
+    }
+    history.push({ role: 'assistant', content: reply });
+    sessionMessages.push({ role: 'twin', content: reply });
     removeTyping();
-    appendMsg('twin',reply,modeMeta[mode]);
-    if(learned)appendLearn(learned);
+    appendMsg('twin', reply, modeMeta[mode]);
+    if (learned) appendLearn(learned);
     exchanges++;
-    document.getElementById('exchCount').textContent=exchanges+' exchange'+(exchanges!==1?'s':'');
+    document.getElementById('exchCount').textContent = exchanges;
+    document.getElementById('exchBadge').textContent = exchanges;
     saveSession();
-  }catch(e){removeTyping();appendMsg('twin','Error: ' + e.message);}
-  btn.disabled=false;inp.focus();
+  } catch (e) {
+    removeTyping();
+    appendMsg('twin', 'Error: ' + e.message);
+  }
+  btn.disabled = false; inp.focus();
 }
 
-async function runDecision(){
+async function runDecision() {
   const apiKey = getApiKey();
-  if(!apiKey) { alert("API Key required."); return; }
+  if (!apiKey) { alert("API Key required. Add it in Profile & Settings."); return; }
+  const title = document.getElementById('dTitle').value.trim();
+  const ctx = document.getElementById('dContext').value.trim();
+  if (!title) return;
+  const btn = document.getElementById('decideBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+  document.getElementById('dresult').innerHTML = '';
+  const prompt = `[DECISION FRAMEWORK] Decision: ${title}\nContext: ${ctx}\nStakes: ${document.getElementById('dStakes').value}\n\nFormat your response EXACTLY as:\nVERDICT: [one clear sentence]\n\nWHY: [2-3 sentences of core reasoning]\n\nRISKS: [key risks, blunt]\n\nMY MOVE: [concrete next action]`;
 
-  const title=document.getElementById('dTitle').value.trim();
-  const ctx=document.getElementById('dContext').value.trim();
-  const stakes=document.getElementById('dStakes').value;
-  if(!title)return;
-  const btn=document.getElementById('decideBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Analyzing...';
-  document.getElementById('dresult').innerHTML='';
-  
-  const prompt=`[DECISION MODE] Decision: ${title} Context: ${ctx} Format response as VERDICT: , WHY: , RISKS: , MY MOVE:`;
-
-  try{
-    const res=await fetch(API,{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:MODEL,max_tokens:800,
-        messages:[{role:'system',content:TWIN_PERSONA},{role:'user',content:prompt}]})});
-    const data=await res.json();
-    const reply=data.choices?.[0]?.message?.content||'';
-    // Simplified render for decision
-    document.getElementById('dresult').innerHTML=`<div class="dresult">${reply.replace(/\n/g,'<br>')}</div>`;
-    exchanges++;document.getElementById('exchCount').textContent=exchanges+' exchanges';
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: MODEL, max_tokens: 600, messages: [{ role: 'system', content: TWIN_PERSONA }, { role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || '';
+    const verdictMatch = reply.match(/VERDICT:\s*(.+?)(?=\n|WHY:)/s);
+    const verdictText = verdictMatch ? verdictMatch[1].trim() : '';
+    const rest = reply.replace(/VERDICT:\s*.+?(?=WHY:|$)/s, '').trim();
+    document.getElementById('dresult').innerHTML =
+      `<div class="d-result">${verdictText ? `<div class="d-verdict">${verdictText}</div>` : ''}${rest.replace(/\n/g, '<br>')}</div>`;
+    exchanges++; document.getElementById('exchCount').textContent = exchanges; document.getElementById('exchBadge').textContent = exchanges;
     saveSession();
-  }catch(e){document.getElementById('dresult').innerHTML='<div class="dresult" style="color:var(--danger)">Error.</div>';}
-  btn.disabled=false;btn.innerHTML='Run Framework →';
+  } catch (e) {
+    document.getElementById('dresult').innerHTML = `<div class="d-result" style="color:var(--danger)">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.innerHTML = 'Run Framework →';
 }
 
-function saveSession(){
-  if(!sessionMessages.length)return;
-  const sessions=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  const idx=sessions.findIndex(s=>s.id===sessionId);
-  const obj={id:sessionId,start:sessionStart,exchanges,messages:sessionMessages,learned:learnedThings};
-  if(idx>=0)sessions[idx]=obj;else sessions.unshift(obj);
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(sessions.slice(0,30)));
+function saveSession() {
+  if (!sessionMessages.length) return;
+  const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const idx = sessions.findIndex(s => s.id === sessionId);
+  const obj = { id: sessionId, start: sessionStart, exchanges, messages: sessionMessages, learned: learnedThings };
+  if (idx >= 0) sessions[idx] = obj; else sessions.unshift(obj);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions.slice(0, 30)));
 }
 
-function renderHistory(){
-  const body=document.getElementById('historyBody');
-  const sessions=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  if(!sessions.length){body.innerHTML='<div class="empty-state">No saved conversations yet.</div>';return;}
-  body.innerHTML=sessions.map((s,i)=>`
+function renderHistory() {
+  const body = document.getElementById('historyBody');
+  const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  if (!sessions.length) {
+    body.innerHTML = '<div class="empty-state">No saved conversations yet.<br>Start talking to your twin.</div>';
+    return;
+  }
+  body.innerHTML = sessions.map((s, i) => `
     <div class="session-card">
       <div class="sc-head" onclick="toggleSess(${i})">
-        <div><div class="sc-title">Session · ${s.start}</div><div class="sc-meta">${s.exchanges} exchanges</div></div>
-        <div class="sc-chev" id="chev-${i}">▾</div>
+        <div>
+          <div class="sc-title">Session · ${s.start}</div>
+          <div class="sc-meta">${s.exchanges} exchanges${s.learned?.length ? ` · ${s.learned.length} learned` : ''}</div>
+        </div>
+        <div style="font-size:10px;color:var(--muted)" id="chev-${i}">▾</div>
       </div>
       <div class="sc-body" id="sbody-${i}">
-        ${s.messages.map(m=>`<div class="hist-msg"><b>${m.role.toUpperCase()}</b>: ${m.content}</div>`).join('')}
+        ${s.messages.map(m => `
+          <div class="hm ${m.role === 'twin' ? 'twin' : ''}">
+            <div class="hm-who">${m.role === 'user' ? 'YOU' : 'TWIN'}</div>
+            <div class="hm-txt">${m.content}</div>
+          </div>`).join('')}
       </div>
     </div>`).join('');
 }
 
-function toggleSess(i){
-  const b=document.getElementById('sbody-'+i);const c=document.getElementById('chev-'+i);
-  const open=b.classList.toggle('open');c.textContent=open?'▴':'▾';
+function toggleSess(i) {
+  const b = document.getElementById('sbody-' + i);
+  const c = document.getElementById('chev-' + i);
+  const open = b.classList.toggle('open');
+  c.textContent = open ? '▴' : '▾';
 }
 
-function updateLearnedList(){
-  const el=document.getElementById('learnedList');
-  el.innerHTML=learnedThings.map(t=>`<div class="learned-item">${t}</div>`).join('') || 'Nothing learned yet.';
+function updateLearnedList() {
+  const el = document.getElementById('learnedList');
+  if (!learnedThings.length) {
+    el.innerHTML = '<div class="li-empty">Nothing learned yet — start a conversation.</div>';
+    return;
+  }
+  el.innerHTML = learnedThings.map(t => `<div class="li">${t}</div>`).join('');
 }
 </script>
 </body>
