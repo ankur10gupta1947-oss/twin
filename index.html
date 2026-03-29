@@ -801,6 +801,119 @@ body::after {
   .sidebar { display: none; }
   .profile-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════════ PLANNER ══════════════ */
+.planner-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 14px; text-align: center;
+  font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 2;
+}
+.planner-empty-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--accent-dim); border: 1px solid rgba(212,255,71,0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.plan-meta {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.plan-goal {
+  flex: 1;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent); border-radius: 8px;
+  padding: 12px 14px;
+}
+.plan-goal-label { font-family: var(--mono); font-size: 8px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 5px; }
+.plan-goal-text { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.5; }
+.plan-stats { display: flex; gap: 8px; flex-shrink: 0; }
+.plan-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 7px; padding: 10px 14px; text-align: center;
+}
+.plan-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--accent); line-height: 1; }
+.plan-stat-lbl { font-family: var(--mono); font-size: 8px; color: var(--muted2); margin-top: 3px; }
+
+.phases { display: flex; flex-direction: column; gap: 10px; }
+.phase-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.phase-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 15px; cursor: pointer; transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.phase-head:hover { background: var(--surface2); }
+.phase-head-l { display: flex; align-items: center; gap: 10px; }
+.phase-num {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-dim); border: 1px solid rgba(212,255,71,0.3);
+  font-family: var(--mono); font-size: 9px; color: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-weight: 600;
+}
+.phase-name { font-size: 13px; font-weight: 700; }
+.phase-timeline {
+  font-family: var(--mono); font-size: 8.5px; color: var(--muted2);
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 3px; padding: 2px 7px;
+}
+.phase-chev { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+.phase-chev.open { transform: rotate(180deg); }
+.phase-body { padding: 10px 14px 12px; display: none; }
+.phase-body.open { display: block; }
+.task-list { display: flex; flex-direction: column; gap: 5px; }
+.task {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 10px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.task:hover { border-color: var(--border2); }
+.task-check {
+  width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+  border: 1.5px solid var(--border3); cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.task-check.done { background: var(--accent); border-color: var(--accent); }
+.task-check.done::after { content: '✓'; font-size: 8px; color: #0a0a0a; font-weight: 700; }
+.task-content { flex: 1; min-width: 0; }
+.task-text { font-size: 12px; line-height: 1.55; color: var(--text2); }
+.task-text.done { text-decoration: line-through; color: var(--muted); }
+.task-note { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 3px; }
+.task-pri {
+  font-family: var(--mono); font-size: 7.5px; font-weight: 600;
+  padding: 1px 6px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 1px;
+}
+.pri-high { background: rgba(255,85,85,0.1); color: var(--danger); border: 1px solid rgba(255,85,85,0.25); }
+.pri-med  { background: rgba(255,170,71,0.1); color: var(--orange); border: 1px solid rgba(255,170,71,0.25); }
+.pri-low  { background: rgba(71,255,176,0.1); color: var(--green); border: 1px solid rgba(71,255,176,0.25); }
+
+.blocker-section { margin-top: 14px; }
+.blocker-label { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--danger); margin-bottom: 7px; }
+.blocker {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 12px; border-radius: 6px; margin-bottom: 5px;
+  background: var(--danger-dim); border: 1px solid rgba(255,85,85,0.2);
+  font-size: 12px; line-height: 1.5; color: var(--text2);
+}
+.blocker::before { content: '⚠'; font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+
+.next-move-card {
+  margin-top: 10px;
+  background: linear-gradient(135deg, rgba(71,255,176,0.06), rgba(71,255,176,0.02));
+  border: 1px solid rgba(71,255,176,0.25); border-radius: 9px; padding: 13px 15px;
+}
+.next-move-label { font-family: var(--mono); font-size: 8px; color: var(--green); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.next-move-text { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.55; }
+
+.plan-toolbar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+}
+.plan-src-badge {
+  font-family: var(--mono); font-size: 9px; color: var(--muted2);
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 3px 9px;
+}
 </style>
 </head>
 <body>
@@ -860,6 +973,12 @@ body::after {
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
         </span>
         Decision Engine
+      </div>
+      <div class="nav" onclick="switchPanel('planner',this)">
+        <span class="nav-icon">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.75" y="2.5" width="10.5" height="9" rx="1.2"/><path d="M4.5 1v3M9.5 1v3M1.75 6.5h10.5"/></svg>
+        </span>
+        Project Planner
       </div>
 
       <div class="sb-section-label">Memory</div>
@@ -1090,6 +1209,61 @@ body::after {
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PLANNER ── -->
+  <div class="panel" id="panel-planner">
+    <div class="panel-hd">
+      <div class="panel-title">Project Planner</div>
+      <div class="panel-sub">Analyzes your conversation and builds a structured project plan from it.</div>
+    </div>
+    <div class="panel-body" id="plannerBody">
+      <div class="planner-empty" id="plannerEmpty">
+        <div class="planner-empty-icon">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" width="20" height="20" stroke-linecap="round">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"/>
+            <path d="M6.5 2v3M13.5 2v3M2.5 9.5h15"/>
+          </svg>
+        </div>
+        <div>
+          Have a conversation with your twin first.<br>
+          Then hit <b style="color:var(--accent)">Generate Plan</b> — it'll read<br>
+          the whole session and build a project roadmap.
+        </div>
+        <button class="abtn" onclick="runPlanner()" id="plannerGenBtn">Generate Plan →</button>
+      </div>
+      <div id="plannerResult" style="display:none">
+        <div class="plan-toolbar">
+          <button class="abtn" style="padding:6px 14px;font-size:11px;" onclick="runPlanner()" id="plannerRegenBtn">↻ Regenerate</button>
+          <span class="plan-src-badge" id="plannerSrcBadge">—</span>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-goal">
+            <div class="plan-goal-label">Project Goal</div>
+            <div class="plan-goal-text" id="planGoal">—</div>
+          </div>
+          <div class="plan-stats">
+            <div class="plan-stat">
+              <div class="plan-stat-val" id="planPhaseCount">—</div>
+              <div class="plan-stat-lbl">Phases</div>
+            </div>
+            <div class="plan-stat">
+              <div class="plan-stat-val" id="planTaskCount">—</div>
+              <div class="plan-stat-lbl">Tasks</div>
+            </div>
+          </div>
+        </div>
+        <div class="phases" id="planPhases"></div>
+        <div class="blocker-section" id="planBlockerSection" style="display:none">
+          <div class="blocker-label">Blockers / Risks</div>
+          <div id="planBlockers"></div>
+        </div>
+        <div class="next-move-card" id="planNextMove" style="display:none">
+          <div class="next-move-label">Next Move</div>
+          <div class="next-move-text" id="planNextMoveText">—</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1418,6 +1592,148 @@ function toggleSess(i) {
   const c = document.getElementById('chev-' + i);
   const open = b.classList.toggle('open');
   c.textContent = open ? '▴' : '▾';
+}
+
+// ── Planner ──
+let plannerTasks = {}; // track checked state: { "phase-task": bool }
+
+async function runPlanner() {
+  const apiKey = getApiKey();
+  if (!apiKey) { alert("Add your Groq API Key in Profile & Settings first."); return; }
+  if (!sessionMessages.length) { alert("Have a conversation first — the planner reads your session."); return; }
+
+  const btn = document.getElementById('plannerGenBtn');
+  const btn2 = document.getElementById('plannerRegenBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Analyzing...'; }
+  if (btn2) { btn2.disabled = true; btn2.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0a"></span> Analyzing...'; }
+
+  const convoText = sessionMessages.map(m => `${m.role === 'user' ? 'USER' : 'TWIN'}: ${m.content}`).join('\n\n');
+  const prompt = `Analyze this conversation and extract a structured project plan. Return ONLY valid JSON, no markdown, no explanation.
+
+Conversation:
+${convoText}
+
+JSON schema:
+{
+  "project": "short project name",
+  "goal": "one-sentence goal",
+  "phases": [
+    {
+      "name": "Phase name",
+      "timeline": "e.g. Week 1-2 or Day 1",
+      "tasks": [
+        { "task": "task description", "priority": "high|medium|low", "note": "optional short note" }
+      ]
+    }
+  ],
+  "blockers": ["blocker 1", "blocker 2"],
+  "next_move": "single most important next action"
+}
+
+Rules: Extract real actionable tasks from the conversation. Be specific, not generic. 2-4 phases max. 3-6 tasks per phase. If nothing concrete was discussed, still extract implied goals.`;
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: MODEL, max_tokens: 1200,
+        messages: [
+          { role: 'system', content: 'You are a project planning assistant. Output only valid JSON. No markdown fences, no preamble.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let raw = data.choices?.[0]?.message?.content || '';
+    raw = raw.replace(/```json|```/g, '').trim();
+    const plan = JSON.parse(raw);
+    renderPlan(plan);
+  } catch (e) {
+    alert('Plan generation failed: ' + e.message);
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = 'Generate Plan →'; }
+  if (btn2) { btn2.disabled = false; btn2.innerHTML = '↻ Regenerate'; }
+}
+
+function renderPlan(plan) {
+  plannerTasks = {};
+  document.getElementById('plannerEmpty').style.display = 'none';
+  document.getElementById('plannerResult').style.display = 'block';
+
+  document.getElementById('planGoal').textContent = plan.goal || '—';
+  document.getElementById('planPhaseCount').textContent = plan.phases?.length || 0;
+  const totalTasks = (plan.phases || []).reduce((s, p) => s + (p.tasks?.length || 0), 0);
+  document.getElementById('planTaskCount').textContent = totalTasks;
+  document.getElementById('plannerSrcBadge').textContent =
+    `Built from ${sessionMessages.length} messages · ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+
+  // Phases
+  const phasesEl = document.getElementById('planPhases');
+  phasesEl.innerHTML = (plan.phases || []).map((ph, pi) => {
+    const tasks = (ph.tasks || []).map((t, ti) => {
+      const id = `${pi}-${ti}`;
+      const priCls = t.priority === 'high' ? 'pri-high' : t.priority === 'low' ? 'pri-low' : 'pri-med';
+      return `<div class="task" id="task-${id}">
+        <div class="task-check" id="chk-${id}" onclick="toggleTask('${id}')"></div>
+        <div class="task-content">
+          <div class="task-text" id="ttxt-${id}">${t.task}</div>
+          ${t.note ? `<div class="task-note">${t.note}</div>` : ''}
+        </div>
+        <span class="task-pri ${priCls}">${t.priority}</span>
+      </div>`;
+    }).join('');
+    return `<div class="phase-card">
+      <div class="phase-head" onclick="togglePhase(${pi})">
+        <div class="phase-head-l">
+          <div class="phase-num">${pi + 1}</div>
+          <div class="phase-name">${ph.name}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${ph.timeline ? `<span class="phase-timeline">${ph.timeline}</span>` : ''}
+          <span class="phase-chev open" id="pchev-${pi}">▾</span>
+        </div>
+      </div>
+      <div class="phase-body open" id="pbody-${pi}">
+        <div class="task-list">${tasks}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Blockers
+  const blockers = plan.blockers?.filter(Boolean) || [];
+  if (blockers.length) {
+    document.getElementById('planBlockerSection').style.display = 'block';
+    document.getElementById('planBlockers').innerHTML = blockers.map(b => `<div class="blocker">${b}</div>`).join('');
+  } else {
+    document.getElementById('planBlockerSection').style.display = 'none';
+  }
+
+  // Next move
+  if (plan.next_move) {
+    document.getElementById('planNextMove').style.display = 'block';
+    document.getElementById('planNextMoveText').textContent = plan.next_move;
+  } else {
+    document.getElementById('planNextMove').style.display = 'none';
+  }
+}
+
+function togglePhase(i) {
+  const body = document.getElementById('pbody-' + i);
+  const chev = document.getElementById('pchev-' + i);
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+function toggleTask(id) {
+  plannerTasks[id] = !plannerTasks[id];
+  const done = plannerTasks[id];
+  const chk = document.getElementById('chk-' + id);
+  const txt = document.getElementById('ttxt-' + id);
+  if (chk) chk.classList.toggle('done', done);
+  if (txt) txt.classList.toggle('done', done);
 }
 
 function updateLearnedList() {
