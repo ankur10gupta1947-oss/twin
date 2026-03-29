@@ -658,24 +658,78 @@ body::after {
 .form-field select { cursor: pointer; }
 .form-field select option { background: var(--surface2); }
 
-.d-result {
-  margin-top: 16px;
+/* ── Decision result cards ── */
+.d-result { margin-top: 16px; animation: msg-in 0.25s ease; display: flex; flex-direction: column; gap: 8px; }
+.d-card {
   background: var(--surface);
   border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 18px;
-  animation: msg-in 0.25s ease;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text2);
+  border-radius: 9px;
+  padding: 14px 16px;
 }
-.d-verdict {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
+.d-card-label {
+  font-family: var(--mono); font-size: 8px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.d-card-body { font-size: 13px; line-height: 1.68; color: var(--text2); }
+.d-card.verdict { border-color: rgba(212,255,71,0.3); background: linear-gradient(135deg, rgba(212,255,71,0.06), rgba(212,255,71,0.02)); }
+.d-card.verdict .d-card-label { color: var(--accent); }
+.d-card.verdict .d-card-body { font-size: 15px; font-weight: 600; color: var(--text); }
+.d-card.why .d-card-label { color: var(--cyan); }
+.d-card.risks { border-color: rgba(255,85,85,0.2); }
+.d-card.risks .d-card-label { color: var(--danger); }
+.d-card.move { border-color: rgba(71,255,176,0.2); background: rgba(71,255,176,0.03); }
+.d-card.move .d-card-label { color: var(--green); }
+.d-card.move .d-card-body { font-weight: 500; color: var(--text); }
+
+/* ── Inline confirm modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadein 0.15s ease;
+}
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface2);
+  border: 1px solid var(--border3);
+  border-radius: 12px;
+  padding: 22px 24px;
+  width: 320px;
+  animation: modal-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modal-in { from { opacity: 0; transform: scale(0.92) translateY(10px); } to { opacity: 1; transform: none; } }
+.modal-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.modal-sub { font-family: var(--mono); font-size: 10px; color: var(--muted2); line-height: 1.6; margin-bottom: 18px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-cancel {
+  padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  background: transparent; border: 1px solid var(--border2); color: var(--muted2); cursor: pointer;
+  transition: all 0.15s;
+}
+.modal-cancel:hover { border-color: var(--border3); color: var(--text); }
+.modal-confirm {
+  padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;
+  background: var(--danger); border: none; color: #fff; cursor: pointer;
+  transition: all 0.15s;
+}
+.modal-confirm:hover { background: #ff3333; }
+
+/* ── History delete button ── */
+.sc-del {
+  font-family: var(--mono); font-size: 8.5px;
+  padding: 3px 8px; border-radius: 4px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0;
+}
+.sc-del:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+
+/* ── Typing mode tag ── */
+.typing-mode {
+  font-family: var(--mono); font-size: 8px; font-weight: 500;
+  letter-spacing: 0.1em; padding: 1px 6px; border-radius: 3px;
+  margin-left: 4px;
 }
 
 /* ══════════════ HISTORY ══════════════ */
@@ -1043,17 +1097,34 @@ body::after {
 </main>
 </div>
 
+<!-- ── Inline confirm modal ── -->
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Start New Conversation?</div>
+    <div class="modal-sub">Current session is already saved to history.<br>This will clear the chat and reset memory.</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmNewConvo()">Clear &amp; Start Fresh</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 const STORAGE_KEY = 'dt_sessions_v3';
 const API_KEY_STORAGE = 'dt_groq_key';
 
-const TWIN_PERSONA = `You are a digital twin of the user. You ARE them — think, reason, and communicate exactly as they do.
+function buildPersona() {
+  const domainStr = domains.length ? domains.join(', ') : 'General tech & strategy';
+  return `You are a digital twin of the user. You ARE them — think, reason, and communicate exactly as they do.
 
 Core traits: Systems Thinker, First Principles, India-First, Blunt/Direct, No Fluff, Contrarian, Anti-Hype, Shovel Manufacturer mindset, OSINT awareness, Semiconductor strategy awareness, Pre-college founder, Vibe coder, Zero-cost stack, Multi-agent systems interest, Data moat builder, Geopolitical realist.
 
+Domain expertise: ${domainStr}.
+
 Use "I" — you are not an assistant, you are the user's digital reflection. Be terse. No corporate-speak. If you learn something new about the user from the conversation, output it on a new line as: // TWIN LEARNED: [one-line insight]`;
+}
 
 const modeMeta = {
   think:    { desc: 'Big picture analysis first — then the details that actually matter.', tag: 'ANALYSIS', cls: 'analysis' },
@@ -1088,6 +1159,12 @@ function renderDomains() {
     `<span class="tc tc-o removable" title="Click to remove">
       ${d}<span class="tc-remove" onclick="removeDomain(${i})">✕</span>
     </span>`).join('');
+  // Sync sidebar footer chips
+  const sb = document.querySelector('.sb-footer .chips');
+  if (sb) {
+    const coreChips = ['Systems Thinker','First Principles','Contrarian','India-First','Blunt & Direct','Zero-Cost Stack','Shovel Manufacturer','Vibe Coder'];
+    sb.innerHTML = [...coreChips, ...domains].map(d => `<span class="chip">${d}</span>`).join('');
+  }
 }
 function addDomain() {
   const inp = document.getElementById('domainInput');
@@ -1106,7 +1183,15 @@ renderDomains();
 
 // ── New conversation ──
 function newConversation() {
-  if (sessionMessages.length && !confirm('Start a new conversation? Current session is already saved.')) return;
+  if (sessionMessages.length) {
+    document.getElementById('modalOverlay').style.display = 'flex';
+  } else {
+    confirmNewConvo();
+  }
+}
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+function confirmNewConvo() {
+  closeModal();
   saveSession();
   history = []; sessionMessages = []; learnedThings = []; exchanges = 0;
   document.getElementById('exchCount').textContent = '0';
@@ -1114,9 +1199,9 @@ function newConversation() {
   document.getElementById('learnCount').textContent = '0';
   document.getElementById('learnedBadge').textContent = '0';
   updateLearnedList();
-  const msgs = document.getElementById('messages');
-  msgs.innerHTML = '';
+  document.getElementById('messages').innerHTML = '';
   appendMsg('twin', 'New session started. What are we thinking about?', null);
+  document.getElementById('userInput').focus();
 }
 
 // Input auto-resize
@@ -1180,7 +1265,9 @@ function appendLearn(text) {
 function showTyping() {
   const msgs = document.getElementById('messages');
   const w = document.createElement('div'); w.className = 'typing-wrap'; w.id = 'typing';
-  const lbl = document.createElement('div'); lbl.className = 'mlabel'; lbl.textContent = 'TWIN';
+  const lbl = document.createElement('div'); lbl.className = 'mlabel';
+  const m = modeMeta[mode];
+  lbl.innerHTML = `TWIN <span class="typing-mode vtag ${m.cls}" style="font-size:7.5px;padding:1px 5px;border-radius:2px;">${m.tag}</span>`;
   const t = document.createElement('div'); t.className = 'typing';
   t.innerHTML = '<span></span><span></span><span></span>';
   w.appendChild(lbl); w.appendChild(t); msgs.appendChild(w);
@@ -1208,7 +1295,7 @@ async function sendMessage() {
     const res = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({ model: MODEL, max_tokens: 900, messages: [{ role: 'system', content: TWIN_PERSONA }, ...history] })
+      body: JSON.stringify({ model: MODEL, max_tokens: 900, messages: [{ role: 'system', content: buildPersona() }, ...history] })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
@@ -1255,15 +1342,26 @@ async function runDecision() {
     const res = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({ model: MODEL, max_tokens: 600, messages: [{ role: 'system', content: TWIN_PERSONA }, { role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: MODEL, max_tokens: 600, messages: [{ role: 'system', content: buildPersona() }, { role: 'user', content: prompt }] })
     });
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content || '';
-    const verdictMatch = reply.match(/VERDICT:\s*(.+?)(?=\n|WHY:)/s);
-    const verdictText = verdictMatch ? verdictMatch[1].trim() : '';
-    const rest = reply.replace(/VERDICT:\s*.+?(?=WHY:|$)/s, '').trim();
-    document.getElementById('dresult').innerHTML =
-      `<div class="d-result">${verdictText ? `<div class="d-verdict">${verdictText}</div>` : ''}${rest.replace(/\n/g, '<br>')}</div>`;
+    // Parse into sections
+    const extract = (key, next) => {
+      const rx = new RegExp(key + ':\\s*([\\s\\S]*?)(?=' + next + ':|$)');
+      const m = reply.match(rx); return m ? m[1].trim() : '';
+    };
+    const verdict = extract('VERDICT', 'WHY');
+    const why     = extract('WHY', 'RISKS');
+    const risks   = extract('RISKS', 'MY MOVE');
+    const move    = extract('MY MOVE', '~~~');
+    const cards = [
+      verdict ? `<div class="d-card verdict"><div class="d-card-label">Verdict</div><div class="d-card-body">${verdict}</div></div>` : '',
+      why     ? `<div class="d-card why"><div class="d-card-label">Why</div><div class="d-card-body">${why.replace(/\n/g,'<br>')}</div></div>` : '',
+      risks   ? `<div class="d-card risks"><div class="d-card-label">Risks</div><div class="d-card-body">${risks.replace(/\n/g,'<br>')}</div></div>` : '',
+      move    ? `<div class="d-card move"><div class="d-card-label">My Move</div><div class="d-card-body">${move.replace(/\n/g,'<br>')}</div></div>` : '',
+    ].filter(Boolean).join('') || `<div class="d-card"><div class="d-card-body">${reply.replace(/\n/g,'<br>')}</div></div>`;
+    document.getElementById('dresult').innerHTML = `<div class="d-result">${cards}</div>`;
     exchanges++; document.getElementById('exchCount').textContent = exchanges; document.getElementById('exchBadge').textContent = exchanges;
     saveSession();
   } catch (e) {
@@ -1289,13 +1387,14 @@ function renderHistory() {
     return;
   }
   body.innerHTML = sessions.map((s, i) => `
-    <div class="session-card">
-      <div class="sc-head" onclick="toggleSess(${i})">
-        <div>
+    <div class="session-card" id="scard-${i}">
+      <div class="sc-head">
+        <div onclick="toggleSess(${i})" style="flex:1;cursor:pointer;">
           <div class="sc-title">Session · ${s.start}</div>
           <div class="sc-meta">${s.exchanges} exchanges${s.learned?.length ? ` · ${s.learned.length} learned` : ''}</div>
         </div>
-        <div style="font-size:10px;color:var(--muted)" id="chev-${i}">▾</div>
+        <button class="sc-del" onclick="deleteSession(${i})" title="Delete session">✕ Delete</button>
+        <div style="font-size:10px;color:var(--muted);padding-left:8px;cursor:pointer;" id="chev-${i}" onclick="toggleSess(${i})">▾</div>
       </div>
       <div class="sc-body" id="sbody-${i}">
         ${s.messages.map(m => `
@@ -1305,6 +1404,13 @@ function renderHistory() {
           </div>`).join('')}
       </div>
     </div>`).join('');
+}
+
+function deleteSession(i) {
+  const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  sessions.splice(i, 1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  renderHistory();
 }
 
 function toggleSess(i) {
