@@ -290,6 +290,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .key-row{display:flex;gap:7px}
 .key-input{flex:1;background:var(--bg);border:1px solid var(--border2);padding:7px 11px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color 0.15s;letter-spacing:0.04em}
 .key-input:focus{border-color:rgba(249,115,22,0.3)}
+
+/* Drive sync card */
+.drive-card{background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.18);padding:13px 16px;margin-bottom:16px;border-left:3px solid var(--cyan)}
+.drive-card .ac-label{color:var(--cyan)}
+.drive-status{font-family:var(--mono);font-size:7px;color:var(--muted3);margin-top:6px;letter-spacing:0.06em}
+.drive-status.synced{color:var(--cyan)}
+.drive-status.error{color:var(--danger)}
+
 .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .pcard{background:var(--surface);border:1px solid var(--border);padding:13px}
 .pcard-label{font-family:var(--mono);font-size:7px;text-transform:uppercase;letter-spacing:0.16em;color:var(--muted3);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:7px;display:flex;align-items:center;gap:8px}
@@ -312,6 +320,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .domain-input:focus{border-color:rgba(249,115,22,0.3)}
 .domain-add-btn{padding:4px 10px;background:var(--accent-d);border:1px solid rgba(249,115,22,0.25);color:var(--accent);font-family:var(--mono);font-size:8px;cursor:pointer;transition:all 0.12s;letter-spacing:0.07em}
 .domain-add-btn:hover{background:rgba(249,115,22,0.16)}
+
 /* Framework library in profile */
 .fw-card{background:var(--cyan-d);border:1px solid rgba(34,211,238,0.18);padding:13px;grid-column:1/-1;border-left:3px solid var(--cyan)}
 .fw-card .pcard-label{color:var(--cyan);border-color:rgba(34,211,238,0.15)}
@@ -564,7 +573,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
   <div class="messages" id="messages">
     <div class="mgroup twin">
       <div class="mlabel">Twin</div>
-      <div class="bubble">Add your <b>Groq API Key</b> in <b>Profile &amp; Settings</b>. Use <b>Book Intel</b> to analyse any book and feed its mental models into the <b>Decision Engine</b>.<br><br><code>Alt+1–5</code> switch modes · <code>/</code> focus input · <code>↑</code> recall last message.</div>
+      <div class="bubble">Add your <b>Groq API Key</b> in <b>Profile &amp; Settings</b>. Enable <b>Google Drive sync</b> to store all data in Drive (nothing on laptop). Use <b>Book Intel</b> to analyse any book and feed its mental models into the <b>Decision Engine</b>.<br><br><code>Alt+1–5</code> switch modes · <code>/</code> focus input · <code>↑</code> recall last message.</div>
     </div>
   </div>
   <div class="input-area">
@@ -669,6 +678,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
       <div class="ac-sub">Stored locally — sent only to Groq's servers. Used by all tools.</div>
       <div class="key-row"><input type="password" id="groqKeyInput" class="key-input" placeholder="gsk_…"><button class="abtn" style="padding:7px 15px;font-size:9.5px;" onclick="saveApiKey()">Save Key</button></div>
     </div>
+    
+    <div class="drive-card">
+      <div class="ac-label">Google Drive Sync</div>
+      <div class="ac-sub">Store all data in your Google Drive. Nothing stays on this device.</div>
+      <div class="key-row">
+        <button class="abtn" id="driveConnectBtn" style="padding:7px 15px;font-size:9.5px;background:var(--cyan);flex:1" onclick="connectDrive()">Connect Drive</button>
+        <button class="abtn" id="driveDisconnectBtn" style="padding:7px 15px;font-size:9.5px;background:var(--surface);color:var(--text);border:1px solid var(--border2);display:none" onclick="disconnectDrive()">Disconnect</button>
+      </div>
+      <div class="drive-status" id="driveStatus">Not connected</div>
+    </div>
+    
     <div class="profile-grid">
       <div class="pcard">
         <div class="pcard-label">Thinking Style</div>
@@ -686,7 +706,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
         </div>
       </div>
       <div class="pcard" style="grid-column:1/-1">
-        <div class="pcard-label" style="display:flex;align-items:center;gap:8px;">Learned This Session <span style="font-family:var(--mono);font-size:7px;background:var(--accent-d);color:var(--accent);border:1px solid rgba(249,115,22,0.22);padding:1px 6px;" id="learnedBadge">0</span></div>
+        <div class="pcard-label" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+          <div>
+            <span>Knowledge Base</span>
+            <span style="font-family:var(--mono);font-size:7px;background:var(--accent-d);color:var(--accent);border:1px solid rgba(249,115,22,0.22);padding:1px 6px;margin-left:6px" id="learnedBadge">0</span>
+            <span style="font-size:7px;color:var(--muted3);font-weight:400;letter-spacing:0;text-transform:none;font-family:var(--sans);margin-left:6px">Compounds across all sessions</span>
+          </div>
+          <button class="scratch-btn" onclick="exportLearnings()" style="font-size:7px;padding:2px 8px">↓ Export</button>
+        </div>
         <div class="learned-wrap" id="learnedList"><div class="li-empty">Nothing learned yet.</div></div>
       </div>
       <div class="fw-card">
@@ -737,28 +764,48 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
       </div>
     </div>
     <textarea id="scratchpad" placeholder="Dump raw thoughts, fragments, links…&#10;&#10;Auto-saved locally."></textarea>
-    <div class="scratch-stats"><span id="scratchWords">0 words</span><span id="scratchChars">0 chars</span><span style="margin-left:auto;color:var(--accent);font-family:var(--mono);font-size:7px;">Auto-saved</span></div>
+    <div class="scratch-stats"><span id="scratchWords">0 words</span><span id="scratchChars">0 chars</span><span style="margin-left:auto;color:var(--accent);font-family:var(--mono);font-size:7px;" id="scratchSaveStatus">Auto-saved</span></div>
   </div>
 </div>
 
 </main>
 </div>
 
+<script src="https://apis.google.com/js/api.js"></script>
 <script>
 // ── CONSTANTS ──────────────────────────────────────────────
 const API = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
-const SK = { sessions:'dt_sessions_v5', key:'dt_groq_key', ideas:'dt_ideas_v2', domains:'dt_domains_v2', scratch:'dt_scratch_v1', frameworks:'dt_frameworks_v1' };
+const SK = { 
+  sessions: 'dt_sessions_v5',
+  key: 'dt_groq_key',
+  ideas: 'dt_ideas_v2',
+  domains: 'dt_domains_v2',
+  scratch: 'dt_scratch_v1',
+  frameworks: 'dt_frameworks_v1',
+  learnings: 'dt_learnings_v1',
+  driveToken: 'dt_drive_token',
+  driveFileId: 'dt_drive_fileid'
+};
 const DEFAULT_DOMAINS = ['AI Infrastructure','OSINT & GeoInt','Semiconductor Strategy','Multi-Agent Systems','Full-Stack Dev','Geopolitics','Robotics'];
+
+// Google Drive Config
+const DRIVE_CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com'; // Replace with your actual client ID
+const DRIVE_API_KEY = 'YOUR_API_KEY'; // Replace with your actual API key
+const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILENAME = 'digitaltwin_data.json';
 
 // ── STATE ──────────────────────────────────────────────────
 let mode = 'think';
-let history = [], sessionMessages = [], learnedThings = [];
+let history = [], sessionMessages = [], sessionLearnings = [];
 let exchanges = 0, totalTokens = 0, lastUserMsg = '', lastPlanData = null;
-let ideas = JSON.parse(localStorage.getItem(SK.ideas)||'[]');
-let domains = JSON.parse(localStorage.getItem(SK.domains)||'null') || [...DEFAULT_DOMAINS];
-let frameworks = JSON.parse(localStorage.getItem(SK.frameworks)||'[]');
+let ideas = [];
+let domains = [];
+let frameworks = [];
+let persistentLearnings = [];
 let bookTicker = null;
+let driveConnected = false;
+let driveSyncing = false;
 const sessionId = Date.now();
 const sessionStart = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
 
@@ -778,6 +825,198 @@ const QUICK = {
 };
 const BOOK_MSGS = ['Searching archives…','Distilling key ideas…','Mapping mental models…','Curating thinking tools…','Composing your brief…'];
 
+// ── GOOGLE DRIVE SYNC ─────────────────────────────────────
+async function connectDrive() {
+  try {
+    await gapi.load('client:auth2', async () => {
+      await gapi.client.init({
+        apiKey: DRIVE_API_KEY,
+        clientId: DRIVE_CLIENT_ID,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        scope: DRIVE_SCOPES
+      });
+      
+      const authInstance = gapi.auth2.getAuthInstance();
+      if (!authInstance.isSignedIn.get()) {
+        await authInstance.signIn();
+      }
+      
+      const user = authInstance.currentUser.get();
+      const token = user.getAuthResponse().access_token;
+      localStorage.setItem(SK.driveToken, token);
+      
+      driveConnected = true;
+      updateDriveUI(true);
+      await loadFromDrive();
+      showToast('Drive connected & synced');
+    });
+  } catch(e) {
+    showToast('Drive connection failed: ' + e.message);
+    updateDriveUI(false, e.message);
+  }
+}
+
+async function disconnectDrive() {
+  const authInstance = gapi.auth2.getAuthInstance();
+  if (authInstance) await authInstance.signOut();
+  localStorage.removeItem(SK.driveToken);
+  localStorage.removeItem(SK.driveFileId);
+  driveConnected = false;
+  updateDriveUI(false);
+  showToast('Drive disconnected');
+}
+
+function updateDriveUI(connected, error = null) {
+  const status = document.getElementById('driveStatus');
+  const connectBtn = document.getElementById('driveConnectBtn');
+  const disconnectBtn = document.getElementById('driveDisconnectBtn');
+  
+  if (connected) {
+    status.textContent = 'Connected & syncing';
+    status.className = 'drive-status synced';
+    connectBtn.style.display = 'none';
+    disconnectBtn.style.display = 'block';
+  } else {
+    status.textContent = error || 'Not connected';
+    status.className = error ? 'drive-status error' : 'drive-status';
+    connectBtn.style.display = 'block';
+    disconnectBtn.style.display = 'none';
+  }
+}
+
+async function saveToDrive() {
+  if (!driveConnected || driveSyncing) return;
+  driveSyncing = true;
+  
+  try {
+    const data = {
+      sessions: JSON.parse(localStorage.getItem(SK.sessions) || '[]'),
+      ideas,
+      domains,
+      frameworks,
+      learnings: persistentLearnings,
+      scratch: document.getElementById('scratchpad').value,
+      lastSync: new Date().toISOString()
+    };
+    
+    const content = JSON.stringify(data);
+    const blob = new Blob([content], {type: 'application/json'});
+    const metadata = {
+      name: DRIVE_FILENAME,
+      mimeType: 'application/json'
+    };
+    
+    const fileId = localStorage.getItem(SK.driveFileId);
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+    form.append('file', blob);
+    
+    const token = localStorage.getItem(SK.driveToken);
+    const url = fileId 
+      ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    
+    const res = await fetch(url, {
+      method: fileId ? 'PATCH' : 'POST',
+      headers: {'Authorization': 'Bearer ' + token},
+      body: form
+    });
+    
+    if (!res.ok) throw new Error('Drive save failed');
+    
+    const result = await res.json();
+    if (result.id) localStorage.setItem(SK.driveFileId, result.id);
+    
+    document.getElementById('driveStatus').textContent = 'Synced just now';
+  } catch(e) {
+    console.error('Drive sync error:', e);
+    updateDriveUI(false, 'Sync failed');
+  } finally {
+    driveSyncing = false;
+  }
+}
+
+async function loadFromDrive() {
+  try {
+    const fileId = localStorage.getItem(SK.driveFileId);
+    if (!fileId) return;
+    
+    const token = localStorage.getItem(SK.driveToken);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: {'Authorization': 'Bearer ' + token}
+    });
+    
+    if (!res.ok) return;
+    
+    const data = await res.json();
+    
+    // Restore all data
+    if (data.sessions) localStorage.setItem(SK.sessions, JSON.stringify(data.sessions));
+    if (data.ideas) {ideas = data.ideas; saveIdeas();}
+    if (data.domains) {domains = data.domains; saveDomains();}
+    if (data.frameworks) {frameworks = data.frameworks; saveFrameworks();}
+    if (data.learnings) {persistentLearnings = data.learnings; savePersistentLearnings();}
+    if (data.scratch) document.getElementById('scratchpad').value = data.scratch;
+    
+    renderDomains();
+    renderLearnings();
+    renderBoard();
+    updateLearnBadges();
+    updateFWBadges();
+    updateSS();
+    
+    document.getElementById('driveStatus').textContent = `Loaded from Drive (${new Date(data.lastSync).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})})`;
+  } catch(e) {
+    console.error('Drive load error:', e);
+  }
+}
+
+// Auto-sync on changes
+function autoSync() {
+  if (driveConnected) {
+    setTimeout(() => saveToDrive(), 1000);
+  }
+}
+
+// Check for existing Drive connection on load
+(async () => {
+  const token = localStorage.getItem(SK.driveToken);
+  if (token) {
+    try {
+      await gapi.load('client:auth2', async () => {
+        await gapi.client.init({
+          apiKey: DRIVE_API_KEY,
+          clientId: DRIVE_CLIENT_ID,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+          scope: DRIVE_SCOPES
+        });
+        driveConnected = true;
+        updateDriveUI(true);
+        await loadFromDrive();
+      });
+    } catch(e) {
+      updateDriveUI(false);
+    }
+  }
+})();
+
+// ── DATA STORAGE ───────────────────────────────────────────
+function save(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+  autoSync();
+}
+
+function load(key, fallback = null) {
+  const val = localStorage.getItem(key);
+  return val ? JSON.parse(val) : fallback;
+}
+
+// Initialize from localStorage or Drive
+ideas = load(SK.ideas, []);
+domains = load(SK.domains, DEFAULT_DOMAINS);
+frameworks = load(SK.frameworks, []);
+persistentLearnings = load(SK.learnings, []);
+
 // ── CLOCK ──────────────────────────────────────────────────
 setInterval(()=>{ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); },1000);
 document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -786,9 +1025,15 @@ document.getElementById('groqKeyInput').value = localStorage.getItem(SK.key)||''
 // ── PERSONA ────────────────────────────────────────────────
 function buildPersona() {
   const d = domains.length ? domains.join(', ') : 'General tech & strategy';
+  
   const fwList = frameworks.length
     ? '\n\nLoaded mental models (from books — use them explicitly when relevant):\n' + frameworks.map(f=>`• ${f.name} [from "${f.book}"]: ${f.desc}`).join('\n')
     : '';
+  
+  const learnedList = persistentLearnings.length
+    ? '\n\nWhat you\'ve learned about the user across all conversations:\n' + persistentLearnings.slice(-20).map(l=>`• [${l.category}] ${l.text}`).join('\n')
+    : '';
+  
   const mi = {
     think:'Analyze systemically. Start with the big picture. Be terse and direct. No fluff. If loaded mental models apply, name and use them explicitly.',
     brainstorm:'DIVERGENT IDEATION. Generate numbered concrete directions, angles, pivots. Push into territory not yet considered. India-first angles, infrastructure plays, data moats. Ask one sharp follow-up at the end.',
@@ -796,10 +1041,134 @@ function buildPersona() {
     delegate:'You ARE the user. Make decisions as they would. Use "I would..." framing. Be directive.',
     critique:'Stress-test ruthlessly. Every flaw, every assumption gap. Be specific.'
   };
-  return `You are a digital twin of the user — you ARE them. Think and communicate exactly as they do.\n\nCore traits: Systems Thinker, First Principles, India-First, Blunt/Direct, No Fluff, Contrarian, Anti-Hype, Shovel Manufacturer mindset, OSINT awareness, Pre-college founder, Vibe coder, Zero-cost stack (Next.js/Supabase/Groq/Vercel), Data moat builder.\n\nDomain expertise: ${d}.${fwList}\n\nCurrent mode: ${mode.toUpperCase()}\nInstruction: ${mi[mode]}\n\nUse "I" — you are the user's reflection. Be terse. Format with markdown where useful.\n\nIf you learn something new about the user, output on a new line: // TWIN LEARNED: [one-line insight]`;
+  
+  return `You are a digital twin of the user — you ARE them. Think and communicate exactly as they do.\n\nCore traits: Systems Thinker, First Principles, India-First, Blunt/Direct, No Fluff, Contrarian, Anti-Hype, Shovel Manufacturer mindset, OSINT awareness, Pre-college founder, Vibe coder, Zero-cost stack (Next.js/Supabase/Groq/Vercel), Data moat builder.\n\nDomain expertise: ${d}.${fwList}${learnedList}\n\nCurrent mode: ${mode.toUpperCase()}\nInstruction: ${mi[mode]}\n\nUse "I" — you are the user's reflection. Be terse. Format with markdown where useful.\n\nIf you learn something new about the user, output on a new line: // TWIN LEARNED: [category: SKILL|PREFERENCE|PROJECT|INSIGHT] [one-line insight]`;
+}
+
+// ── PERSISTENT LEARNING ────────────────────────────────────
+function savePersistentLearnings() {
+  save(SK.learnings, persistentLearnings);
+  updateLearnBadges();
+}
+
+function addLearning(text, category = 'INSIGHT') {
+  const existing = persistentLearnings.find(l => l.text.toLowerCase() === text.toLowerCase());
+  if (existing) return false;
+  
+  persistentLearnings.unshift({
+    id: Date.now(),
+    text,
+    category,
+    learned: new Date().toLocaleString('en-IN', {dateStyle: 'medium', timeStyle: 'short'}),
+    sessionId
+  });
+  savePersistentLearnings();
+  return true;
+}
+
+function removeLearning(id) {
+  persistentLearnings = persistentLearnings.filter(l => l.id !== id);
+  savePersistentLearnings();
+  renderLearnings();
+}
+
+function categorizeLearning(text) {
+  const t = text.toLowerCase();
+  if (t.includes('skill') || t.includes('learned to') || t.includes('can now')) return 'SKILL';
+  if (t.includes('prefers') || t.includes('likes') || t.includes('hates') || t.includes('avoids')) return 'PREFERENCE';
+  if (t.includes('building') || t.includes('project') || t.includes('working on')) return 'PROJECT';
+  return 'INSIGHT';
+}
+
+function updateLearnBadges() {
+  const total = persistentLearnings.length;
+  const session = sessionLearnings.length;
+  document.getElementById('learnCount').textContent = total;
+  document.getElementById('learnedBadge').textContent = session;
+}
+
+function renderLearnings() {
+  const el = document.getElementById('learnedList');
+  
+  if (!persistentLearnings.length) {
+    el.innerHTML = '<div class="li-empty">Nothing learned yet. Have conversations and your twin will extract insights.</div>';
+    return;
+  }
+  
+  const byCategory = {SKILL: [], PREFERENCE: [], PROJECT: [], INSIGHT: []};
+  persistentLearnings.forEach(l => {
+    if (byCategory[l.category]) byCategory[l.category].push(l);
+  });
+  
+  const sections = [];
+  Object.entries(byCategory).forEach(([cat, items]) => {
+    if (!items.length) return;
+    const color = {
+      SKILL: 'var(--cyan)',
+      PREFERENCE: 'var(--purple)',
+      PROJECT: 'var(--accent)',
+      INSIGHT: 'var(--text)'
+    }[cat];
+    
+    sections.push(`
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--mono);font-size:7px;color:${color};letter-spacing:0.12em;margin-bottom:4px;text-transform:uppercase">${cat} (${items.length})</div>
+        ${items.map(l => `
+          <div class="li" style="display:flex;align-items:start;justify-content:space-between;gap:8px;margin-bottom:3px">
+            <div style="flex:1">
+              <div>${l.text}</div>
+              <div style="font-family:var(--mono);font-size:6.5px;color:var(--muted2);margin-top:2px">${l.learned}</div>
+            </div>
+            <button onclick="removeLearning(${l.id})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:10px;padding:0 4px;transition:color 0.12s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted2)'">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    `);
+  });
+  
+  el.innerHTML = sections.join('');
+}
+
+function exportLearnings() {
+  if (!persistentLearnings.length) {
+    showToast('Nothing to export');
+    return;
+  }
+  
+  const lines = [
+    `# Digital Twin Knowledge Base`,
+    `**Total Learnings:** ${persistentLearnings.length}`,
+    `**Last Updated:** ${new Date().toLocaleString('en-IN')}`,
+    ``,
+    `---`,
+    ``
+  ];
+  
+  const byCategory = {SKILL: [], PREFERENCE: [], PROJECT: [], INSIGHT: []};
+  persistentLearnings.forEach(l => {
+    if (byCategory[l.category]) byCategory[l.category].push(l);
+  });
+  
+  Object.entries(byCategory).forEach(([cat, items]) => {
+    if (!items.length) return;
+    lines.push(`## ${cat}`);
+    lines.push('');
+    items.forEach(l => {
+      lines.push(`- ${l.text}`);
+      lines.push(`  *Learned: ${l.learned}*`);
+    });
+    lines.push('');
+  });
+  
+  dlText(lines.join('\n'), `twin-knowledge-${Date.now()}.md`);
+  showToast('Knowledge base exported');
 }
 
 // ── DOMAINS ────────────────────────────────────────────────
+function saveDomains() {
+  save(SK.domains, domains);
+}
+
 function renderDomains() {
   document.getElementById('domainChips').innerHTML = domains.map((d,i)=>`<span class="tc tc-o removable"><span>${d}</span><span class="tc-remove" onclick="removeDomain(${i})">✕</span></span>`).join('');
   const core = ['Systems Thinker','First Principles','India-First','Blunt & Direct','Zero-Cost Stack','Shovel Manufacturer'];
@@ -808,13 +1177,13 @@ function renderDomains() {
 function addDomain() {
   const inp = document.getElementById('domainInput'), val = inp.value.trim();
   if(!val||domains.includes(val)){inp.value='';return}
-  domains.push(val); localStorage.setItem(SK.domains,JSON.stringify(domains)); renderDomains(); inp.value='';
+  domains.push(val); saveDomains(); renderDomains(); inp.value='';
 }
-function removeDomain(i) { domains.splice(i,1); localStorage.setItem(SK.domains,JSON.stringify(domains)); renderDomains(); }
+function removeDomain(i) { domains.splice(i,1); saveDomains(); renderDomains(); }
 renderDomains();
 
 // ── FRAMEWORK LIBRARY ──────────────────────────────────────
-function saveFrameworks() { localStorage.setItem(SK.frameworks,JSON.stringify(frameworks)); updateFWBadges(); renderFWLib(); renderDomains(); }
+function saveFrameworks() { save(SK.frameworks, frameworks); updateFWBadges(); renderFWLib(); renderDomains(); }
 function updateFWBadges() {
   const n = frameworks.length;
   document.getElementById('fwBadge').textContent = n;
@@ -895,7 +1264,30 @@ function appendMsg(role, text, meta, tokens) {
   msgs.appendChild(g); msgs.scrollTop = msgs.scrollHeight;
 }
 function injectPrompt(t){const inp=document.getElementById('userInput');inp.value=t;inp.focus();inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,100)+'px';updateCC()}
-function appendLearn(t){const msgs=document.getElementById('messages');const g=document.createElement('div');g.className='mgroup twin';const lbl=document.createElement('div');lbl.className='mlabel';lbl.textContent='Twin Learned';const b=document.createElement('div');b.className='learn-bubble';b.textContent=t;g.appendChild(lbl);g.appendChild(b);msgs.appendChild(g);msgs.scrollTop=msgs.scrollHeight}
+function appendLearn(t, category = 'INSIGHT'){
+  const msgs=document.getElementById('messages');
+  const g=document.createElement('div');
+  g.className='mgroup twin';
+  const lbl=document.createElement('div');
+  lbl.className='mlabel';
+  
+  const colors = {
+    SKILL: 'var(--cyan)',
+    PREFERENCE: 'var(--purple)',
+    PROJECT: 'var(--accent)',
+    INSIGHT: 'var(--accent)'
+  };
+  
+  lbl.innerHTML = `Twin Learned <span style="font-family:var(--mono);font-size:6px;color:${colors[category]};background:rgba(255,255,255,0.05);padding:1px 5px;margin-left:4px;letter-spacing:0.1em">${category}</span>`;
+  
+  const b=document.createElement('div');
+  b.className='learn-bubble';
+  b.textContent=t;
+  g.appendChild(lbl);
+  g.appendChild(b);
+  msgs.appendChild(g);
+  msgs.scrollTop=msgs.scrollHeight;
+}
 function showTyping(){const msgs=document.getElementById('messages');const w=document.createElement('div');w.className='typing-wrap';w.id='typing';const lbl=document.createElement('div');lbl.className='mlabel';const m=MODES[mode];lbl.innerHTML=`Twin <span class="vtag ${m.cls}" style="font-size:6px;padding:1px 5px;">${m.tag}</span>`;const t=document.createElement('div');t.className='typing';t.innerHTML='<span></span><span></span><span></span>';w.appendChild(lbl);w.appendChild(t);msgs.appendChild(w);msgs.scrollTop=msgs.scrollHeight}
 function removeTyping(){const t=document.getElementById('typing');if(t)t.remove()}
 
@@ -935,13 +1327,40 @@ async function sendMessage() {
     document.getElementById('sbarTokens').textContent = totalTokens.toLocaleString();
     document.getElementById('sbarLatency').textContent = ((Date.now()-t0)/1000).toFixed(1)+'s';
     document.getElementById('sbarSession').textContent = `${exchanges+1} msg`;
-    let learned = null;
-    const lm = reply.match(/\/\/ TWIN LEARNED:\s*(.+)/);
-    if(lm){learned=lm[1].trim();reply=reply.replace(/\/\/ TWIN LEARNED:.*/g,'').trim();learnedThings.push(learned);document.getElementById('learnCount').textContent=learnedThings.length;document.getElementById('learnedBadge').textContent=learnedThings.length;updateLearnedList()}
+    
+    // Extract learnings with categories
+    const learnMatches = reply.matchAll(/\/\/ TWIN LEARNED:\s*\[?(SKILL|PREFERENCE|PROJECT|INSIGHT)\]?\s*(.+)/g);
+    for (const match of learnMatches) {
+      const category = match[1];
+      const text = match[2].trim();
+      const added = addLearning(text, category);
+      if (added) {
+        sessionLearnings.push({text, category});
+        appendLearn(text, category);
+      }
+      reply = reply.replace(match[0], '').trim();
+    }
+    
+    // Fallback: Extract without category
+    const simpleLearns = reply.matchAll(/\/\/ TWIN LEARNED:\s*(.+)/g);
+    for (const match of simpleLearns) {
+      const text = match[1].trim();
+      const category = categorizeLearning(text);
+      const added = addLearning(text, category);
+      if (added) {
+        sessionLearnings.push({text, category});
+        appendLearn(text, category);
+      }
+      reply = reply.replace(match[0], '').trim();
+    }
+    
+    updateLearnBadges();
+    renderLearnings();
+    
     history.push({role:'assistant',content:reply});
     sessionMessages.push({role:'twin',content:reply});
     removeTyping(); appendMsg('twin',reply,MODES[mode],ut);
-    if(learned)appendLearn(learned);
+    
     exchanges++; updateExchCount(); saveSession();
   } catch(e) {
     removeTyping();
@@ -958,12 +1377,20 @@ function updateExchCount(){document.getElementById('exchCount').textContent=exch
 
 function newConversation(){
   if(sessionMessages.length&&!confirm('Clear current session and start fresh?'))return;
-  saveSession(); history=[]; sessionMessages=[]; learnedThings=[]; exchanges=0; totalTokens=0;
+  saveSession(); 
+  history=[]; 
+  sessionMessages=[]; 
+  sessionLearnings=[];
+  exchanges=0; 
+  totalTokens=0;
   updateExchCount();
-  document.getElementById('learnCount').textContent='0'; document.getElementById('learnedBadge').textContent='0';
-  document.getElementById('sbarSession').textContent='—'; document.getElementById('sbarTokens').textContent='0'; document.getElementById('sbarLatency').textContent='—';
-  updateLearnedList(); document.getElementById('messages').innerHTML='';
-  appendMsg('twin','Fresh session. What are we building?',null); inp.focus();
+  updateLearnBadges();
+  document.getElementById('sbarSession').textContent='—'; 
+  document.getElementById('sbarTokens').textContent='0'; 
+  document.getElementById('sbarLatency').textContent='—';
+  document.getElementById('messages').innerHTML='';
+  appendMsg('twin',`Fresh session. I remember everything we've discussed before (${persistentLearnings.length} learnings loaded). What are we building?`,null); 
+  inp.focus();
 }
 
 function saveApiKey(){localStorage.setItem(SK.key,document.getElementById('groqKeyInput').value.trim());showToast('API Key saved')}
@@ -973,7 +1400,7 @@ function exportSession(){
   if(!sessionMessages.length){showToast('No messages to export');return}
   const lines=[`# Digital Twin Session`,`**Date:** ${sessionStart}`,`**Exchanges:** ${exchanges}`,``,`---`,``];
   sessionMessages.forEach(m=>{lines.push(`### ${m.role==='user'?'You':'Twin'}`);lines.push(m.content);lines.push('')});
-  if(learnedThings.length){lines.push('---');lines.push('## Learned');learnedThings.forEach(l=>lines.push(`- ${l}`))}
+  if(sessionLearnings.length){lines.push('---');lines.push('## Learned This Session');sessionLearnings.forEach(l=>lines.push(`- [${l.category}] ${l.text}`))}
   dlText(lines.join('\n'),`twin-session-${Date.now()}.md`); showToast('Session exported');
 }
 function exportAllSessions(){
@@ -1012,11 +1439,11 @@ function showSparkToast(list){
 }
 
 // ── IDEAS ──────────────────────────────────────────────────
+function saveIdeas(){save(SK.ideas, ideas)}
 function pinIdea(text,tag,btn){ideas.unshift({id:Date.now(),text,tag:tag||mode.toUpperCase(),status:'raw',ts:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});saveIdeas();renderBoard();document.getElementById('ideaCount').textContent=ideas.length;document.getElementById('ideaBadge').textContent=ideas.length;if(btn&&btn.textContent){btn.textContent='📍 Pinned!';setTimeout(()=>btn.textContent='📌 Pin',1800)}showToast('Pinned')}
 function moveIdea(id,s){const i=ideas.find(x=>x.id===id);if(i){i.status=s;saveIdeas();renderBoard()}}
 function deleteIdea(id){ideas=ideas.filter(i=>i.id!==id);saveIdeas();renderBoard();document.getElementById('ideaCount').textContent=ideas.length;document.getElementById('ideaBadge').textContent=ideas.length}
 function clearAllIdeas(){if(!ideas.length)return;if(confirm('Clear all ideas?')){ideas=[];saveIdeas();renderBoard();document.getElementById('ideaCount').textContent='0';document.getElementById('ideaBadge').textContent='0'}}
-function saveIdeas(){localStorage.setItem(SK.ideas,JSON.stringify(ideas))}
 function renderBoard(){
   const cols={raw:[],validated:[],shelved:[]};ideas.forEach(i=>{if(cols[i.status])cols[i.status].push(i)});
   const nm={raw:['validated','✓ Validate'],validated:['shelved','→ Shelf'],shelved:['raw','↑ Revive']};
@@ -1069,7 +1496,6 @@ async function runBook() {
 function renderBook(b) {
   const s=str=>str?String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
   const bookTitle = s(b.title);
-  // Check if already fed
   const alreadyFed = b.mentalModels && b.mentalModels.every(m=>frameworks.find(f=>f.name===m.name&&f.book===b.title));
   const feedBtnHtml = `<button class="feed-btn${alreadyFed?' fed':''}" id="feedBtn" onclick="handleFeed()" ${alreadyFed?'disabled':''}>${alreadyFed?'✓ Fed to Twin':'⟶ Feed to Twin'}</button>`;
   window._lastBookData = b;
@@ -1159,7 +1585,22 @@ async function runDecision(){
 }
 
 // ── SESSIONS ───────────────────────────────────────────────
-function saveSession(){if(!sessionMessages.length)return;const sessions=JSON.parse(localStorage.getItem(SK.sessions)||'[]');const idx=sessions.findIndex(s=>s.id===sessionId);const obj={id:sessionId,start:sessionStart,exchanges,messages:sessionMessages,learned:learnedThings};if(idx>=0)sessions[idx]=obj;else sessions.unshift(obj);localStorage.setItem(SK.sessions,JSON.stringify(sessions.slice(0,30)))}
+function saveSession(){
+  if(!sessionMessages.length)return;
+  const sessions=JSON.parse(localStorage.getItem(SK.sessions)||'[]');
+  const idx=sessions.findIndex(s=>s.id===sessionId);
+  const obj={
+    id:sessionId,
+    start:sessionStart,
+    exchanges,
+    messages:sessionMessages,
+    learned:sessionLearnings
+  };
+  if(idx>=0)sessions[idx]=obj;
+  else sessions.unshift(obj);
+  localStorage.setItem(SK.sessions,JSON.stringify(sessions.slice(0,30)));
+  autoSync();
+}
 function renderHistory(){
   const body=document.getElementById('historyBody');
   const q=(document.getElementById('histSearch')?.value||'').toLowerCase().trim();
@@ -1168,10 +1609,9 @@ function renderHistory(){
   if(!sessions.length){body.innerHTML=`<div class="empty-state">${q?'No sessions match':'No saved sessions yet'}</div>`;return}
   body.innerHTML=sessions.map((s,i)=>`<div class="session-card"><div class="sc-head"><div onclick="toggleSess(${i})" style="flex:1;cursor:pointer"><div class="sc-title">Session · ${s.start}</div><div class="sc-meta">${s.exchanges} exchanges${s.learned?.length?` · ${s.learned.length} learned`:''}</div></div><div class="sc-actions"><button class="sc-exp" onclick="exportSessById(${s.id})">↓ MD</button><button class="sc-del" onclick="deleteSess(${i})">✕</button><div style="font-size:10px;color:var(--muted3);padding-left:6px;cursor:pointer" id="chev-${i}" onclick="toggleSess(${i})">▾</div></div></div><div class="sc-body" id="sbody-${i}">${s.messages.map(m=>`<div class="hm ${m.role==='twin'?'twin':''}"><div class="hm-who">${m.role==='user'?'You':'Twin'}</div><div class="hm-txt">${m.content}</div></div>`).join('')}</div></div>`).join('');
 }
-function deleteSess(i){const s=JSON.parse(localStorage.getItem(SK.sessions)||'[]');s.splice(i,1);localStorage.setItem(SK.sessions,JSON.stringify(s));renderHistory()}
+function deleteSess(i){const s=JSON.parse(localStorage.getItem(SK.sessions)||'[]');s.splice(i,1);localStorage.setItem(SK.sessions,JSON.stringify(s));autoSync();renderHistory()}
 function toggleSess(i){const b=document.getElementById('sbody-'+i);const c=document.getElementById('chev-'+i);b.classList.toggle('open');c.textContent=b.classList.contains('open')?'▴':'▾'}
-function exportSessById(id){const s=JSON.parse(localStorage.getItem(SK.sessions)||'[]').find(x=>x.id===id);if(!s)return;const lines=[`# Twin Session — ${s.start}`,``];s.messages.forEach(m=>{lines.push(`### ${m.role==='user'?'You':'Twin'}`);lines.push(m.content);lines.push('')});if(s.learned?.length){lines.push('---');s.learned.forEach(l=>lines.push(`- ${l}`))}dlText(lines.join('\n'),`twin-${id}.md`);showToast('Exported')}
-function updateLearnedList(){const el=document.getElementById('learnedList');el.innerHTML=learnedThings.length?learnedThings.map(t=>`<div class="li">${t}</div>`).join(''):'<div class="li-empty">Nothing learned yet.</div>'}
+function exportSessById(id){const s=JSON.parse(localStorage.getItem(SK.sessions)||'[]').find(x=>x.id===id);if(!s)return;const lines=[`# Twin Session — ${s.start}`,``];s.messages.forEach(m=>{lines.push(`### ${m.role==='user'?'You':'Twin'}`);lines.push(m.content);lines.push('')});if(s.learned?.length){lines.push('---');s.learned.forEach(l=>lines.push(`- [${l.category}] ${l.text}`))}dlText(lines.join('\n'),`twin-${id}.md`);showToast('Exported')}
 
 // ── PLANNER ────────────────────────────────────────────────
 async function runPlanner(){
@@ -1212,11 +1652,17 @@ function exportPlan(){if(!lastPlanData){showToast('Generate a plan first');retur
 const scratch=document.getElementById('scratchpad');
 scratch.value=localStorage.getItem(SK.scratch)||'';
 function updateSS(){const w=scratch.value.trim().split(/\s+/).filter(Boolean).length;document.getElementById('scratchWords').textContent=w+' words';document.getElementById('scratchChars').textContent=scratch.value.length+' chars'}
-scratch.addEventListener('input',()=>{localStorage.setItem(SK.scratch,scratch.value);updateSS()});
+scratch.addEventListener('input',()=>{localStorage.setItem(SK.scratch,scratch.value);updateSS();autoSync()});
 updateSS();
 function copyScratch(){if(!scratch.value){showToast('Nothing');return}navigator.clipboard.writeText(scratch.value).then(()=>showToast('Copied'))}
 function downloadScratch(){if(!scratch.value){showToast('Nothing');return}dlText(scratch.value,`scratch-${Date.now()}.txt`);showToast('Downloaded')}
-function clearScratch(){if(!scratch.value)return;if(confirm('Clear scratchpad?')){scratch.value='';localStorage.removeItem(SK.scratch);updateSS();showToast('Cleared')}}
+function clearScratch(){if(!scratch.value)return;if(confirm('Clear scratchpad?')){scratch.value='';localStorage.removeItem(SK.scratch);updateSS();autoSync();showToast('Cleared')}}
+
+// ── INITIALIZE ─────────────────────────────────────────────
+renderLearnings();
+updateLearnBadges();
+document.getElementById('ideaCount').textContent = ideas.length;
+document.getElementById('ideaBadge').textContent = ideas.length;
 </script>
 </body>
 </html>
