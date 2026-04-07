@@ -1,5 +1,5 @@
 # Digital Twin · Neural Ops v6
-
+ https://ankur10gupta1947-oss.github.io/twin/
 **Your AI thinking partner — loaded with mental models, synced to Google Drive, zero dependencies.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
