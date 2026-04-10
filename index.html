@@ -986,7 +986,7 @@ const MODES = {
   brainstorm:{desc:'Divergent ideation — directions, angles, surprising pivots.',        tag:'BRAINSTORM',cls:'brainstorm'},
   debate:    {desc:"Argues hard against your position. Won't fold.",                     tag:'COUNTER',  cls:'counter'},
   delegate:  {desc:'Acts as your proxy — makes calls on your behalf exactly as you would.',tag:'AS YOU',cls:'proxy'},
-  critique:  {desc:'Stress-tests your idea. Finds every flaw. No mercy.',                tag:'CRITIQUE', cls:'critique'}
+  critique:  {desc:'Extracts assumptions. Checks math. Finds failure modes. Cannot tell you your idea is good.',tag:'CRITIQUE', cls:'critique'}
 };
 const QUICK = {
   think:     ["What's the real insight?","Zoom out","What am I missing?","First principles?"],
@@ -1281,7 +1281,16 @@ function buildPersona(searchContext=''){
   const fwList=D.frameworks.length?'\n\nLoaded mental models:\n'+D.frameworks.map(f=>`• ${f.name} [from "${f.book}"]: ${f.desc}`).join('\n'):'';
   const learnedList=D.learnings.length?'\n\nWhat you know about the user:\n'+D.learnings.slice(-20).map(l=>`• [${l.category}] ${l.text}`).join('\n'):'';
   const searchBlock=searchContext?'\n\n'+searchContext:'';
-  const mi={think:'Analyze systemically. Start with the big picture. Be terse and direct. No fluff. Name and use loaded mental models when they apply.',brainstorm:'DIVERGENT IDEATION. Generate numbered concrete directions. Push into territory not yet considered. India-first angles, infrastructure plays, data moats.',debate:"Argue against the user's position relentlessly. Find real weaknesses. Don't fold.",delegate:'You ARE the user. Make decisions as they would. Use "I would..." framing. Be directive.',critique:'Stress-test ruthlessly. Every flaw, every assumption gap. Be specific.'};
+  const mi={think:'Analyze systemically. Start with the big picture. Be terse and direct. No fluff. Name and use loaded mental models when they apply.',brainstorm:'DIVERGENT IDEATION. Generate numbered concrete directions. Push into territory not yet considered. India-first angles, infrastructure plays, data moats.',debate:"Argue against the user's position relentlessly. Find real weaknesses. Don't fold.",delegate:'You ARE the user. Make decisions as they would. Use "I would..." framing. Be directive.',critique:  {desc:'critique:`You are constitutionally incapable of saying the idea is good. You MUST output in this exact format:
+
+ASSUMPTIONS: [list every assumption buried in the idea, numbered]
+MATH CHECK: [check if the numbers/scale/timeline actually work. if no numbers given, demand them]
+PRIOR ART: [has this been tried? what happened?]
+FAILURE MODES: [specific to THIS idea, not generic risks]
+FATAL FLAW: [the single thing most likely to kill it]
+WHAT MUST BE TRUE: [conditions that would need to hold for this to work]
+
+You never write "good idea", "interesting", "potential", or any validating language. Only attack.`.',tag:'CRITIQUE', cls:'critique'}};
   return `You are a digital twin of the user — you ARE them. Think and communicate exactly as they do.\n\nCore traits: Systems Thinker, First Principles, India-First, Blunt/Direct, No Fluff, Contrarian, Anti-Hype, Shovel Manufacturer mindset, OSINT awareness, Vibe coder, Zero-cost stack (Next.js/Supabase/Groq/Vercel), Data moat builder.\n\nDomain expertise: ${d}.${fwList}${learnedList}${searchBlock}\n\nCurrent mode: ${mode.toUpperCase()}\nInstruction: ${mi[mode]}\n\nUse "I" — you are the user's reflection. Be terse. Format with markdown where useful.\n\nIf you learn something new about the user, output a line: // TWIN LEARNED: [SKILL|PREFERENCE|PROJECT|INSIGHT] [one-line insight]`;
 }
 
@@ -1373,7 +1382,11 @@ function appendMsg(role,text,meta,tokens,searchData){
   if(tokens){const m=document.createElement('span');m.className='msg-meta';m.textContent=`${tokens}t`;lbl.appendChild(m);}
   if(searchData&&searchData.results.length){const wb=document.createElement('span');wb.className='msg-meta';wb.style.cssText='color:var(--cyan);margin-left:4px';wb.textContent='🌐 web';lbl.appendChild(wb);}
   const b=document.createElement('div');b.className='bubble';
-  if(meta&&role==='twin'){const v=document.createElement('div');v.className='vtag '+(searchData&&searchData.results.length?'websearch':meta.cls);v.textContent=searchData&&searchData.results.length?'WEB SEARCH':meta.tag;b.appendChild(v);b.appendChild(document.createElement('br'));}
+  if(meta&&role==='twin'){   const v=document.createElement('div');v.className='vtag '+(searchData&&searchData.results.length?'websearch':meta.cls);   v.textContent=searchData&&searchData.results.length?'WEB SEARCH':meta.tag;   b.appendChild(v);b.appendChild(document.createElement('br'));   if(meta.cls==='critique'&&!searchData){     const sections=['ASSUMPTIONS','MATH CHECK','PRIOR ART','FAILURE MODES','FATAL FLAW','WHAT MUST BE TRUE'];     const colors={'ASSUMPTIONS':'var(--cyan)','MATH CHECK':'var(--accent)','PRIOR ART':'var(--purple)','FAILURE MODES':'var(--danger)','FATAL FLAW':'var(--danger)','WHAT MUST BE TRUE':'var(--text2)'};     let parsed=text;sections.forEach(s=>{const rx=new RegExp(s+':\s*','i');parsed=parsed.replace(rx,`
+§§${s}§§
+`);});     const parts=parsed.split(/
+§§(.+?)§§
+/).filter(Boolean);     if(parts.length>1){       b.innerHTML='';b.appendChild(v);       parts.forEach((part,i)=>{         if(sections.includes(part)){           const lbl=document.createElement('div');           lbl.style.cssText=`font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.14em;color:${colors[part]||'var(--accent)'};margin:10px 0 3px;text-transform:uppercase;display:flex;align-items:center;gap:6px`;           lbl.innerHTML=`<span style="width:4px;height:4px;background:currentColor;border-radius:50%;display:inline-block"></span>${part}`;           b.appendChild(lbl);         } else if(part.trim()){           const cnt=document.createElement('div');cnt.style.cssText='font-size:12.5px;line-height:1.72;color:var(--text2);padding-left:10px;border-left:1px solid rgba(255,255,255,0.06);margin-bottom:4px';           cnt.innerHTML=md(part.trim());b.appendChild(cnt);         }       });       return;     }   } }
   const c=document.createElement('span');c.innerHTML=md(text);b.appendChild(c);
   if(role==='twin'){
     const actions=document.createElement('div');actions.className='bubble-actions';
